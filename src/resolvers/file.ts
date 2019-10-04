@@ -69,9 +69,7 @@ export class FileResolver extends BaseResolver {
       if (await promiseExist(filePath)) {
         await promiseUnlink(filePath);
 
-        const index = this.files.findIndex(item => item == filePath)
-        if (index > -1)
-          this.files.splice(index, 1)
+        this.files = this.files.filter(item => item != filePath)
       }
     }
     catch (err) {

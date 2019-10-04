@@ -75,9 +75,7 @@ class FileResolver extends index_1.BaseResolver {
                 const filePath = this.filePath(context.path, context.auth, context.options.resType);
                 if (yield promiseExist(filePath)) {
                     yield promiseUnlink(filePath);
-                    const index = this.files.findIndex(item => item == filePath);
-                    if (index > -1)
-                        this.files.splice(index, 1);
+                    this.files = this.files.filter(item => item != filePath);
                 }
             }
             catch (err) {

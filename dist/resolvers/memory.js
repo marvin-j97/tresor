@@ -32,9 +32,7 @@ class MemoryResolver extends index_1.BaseResolver {
     }
     remove(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            const index = this.internalStore.findIndex(item => item.path == context.path && item.auth == context.auth);
-            if (index > -1)
-                this.internalStore.splice(index, 1);
+            this.internalStore = this.internalStore.filter(item => !(item.path == context.path && item.auth == context.auth));
         });
     }
     clearSelf() {

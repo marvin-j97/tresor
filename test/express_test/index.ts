@@ -17,7 +17,7 @@ const fsCache = new Tresor({
 app.get("/slow-renderer",
   fsCache.init(),
   async (req: express.Request, res: express.Response) => {
-    res.$tresor(await fromDatabase());
+    res.$tresor.send(await fromDatabase());
   }
 )
 
@@ -34,7 +34,7 @@ app.get("/query",
   htmlCache.init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
-      res.$tresor(`Hello ${req.query.name}!`);
+      res.$tresor.send(`Hello ${req.query.name}!`);
     }, 2500)
   }
 )

@@ -32,9 +32,7 @@ class BaseResolver {
     removeItem(context) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.remove(context);
-            const index = this.items.findIndex(item => item.path == context.path && item.auth == context.auth);
-            if (index > -1)
-                this.items.splice(index, 1);
+            this.items = this.items.filter(item => !(item.path == context.path && item.auth == context.auth));
         });
     }
     checkCache(path, auth, options) {

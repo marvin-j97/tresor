@@ -20,11 +20,7 @@ export class MemoryResolver extends BaseResolver {
   }
 
   async remove(context: IResolverContext) {
-    const index = this.internalStore.findIndex(
-      item => item.path == context.path && item.auth == context.auth
-    )
-    if (index > -1)
-      this.internalStore.splice(index, 1)
+    this.internalStore = this.internalStore.filter(item => !(item.path == context.path && item.auth == context.auth))
   }
 
   async clearSelf() {

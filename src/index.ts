@@ -76,11 +76,8 @@ export abstract class BaseResolver {
 
   private async removeItem(context: IResolverContext) {
     await this.remove(context)
-    const index = this.items.findIndex(
-      item => item.path == context.path && item.auth == context.auth
-    )
-    if (index > -1)
-      this.items.splice(index, 1)
+
+    this.items = this.items.filter(item => !(item.path == context.path && item.auth == context.auth))
   }
 
   public async checkCache(path: string, auth: string | null, options: ITresorOptions): Promise<string | null> {
