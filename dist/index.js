@@ -41,7 +41,7 @@ class BaseResolver {
         return __awaiter(this, void 0, void 0, function* () {
             const item = this.getItem(path, auth, options);
             if (item) {
-                if (item.storedOn < (new Date().valueOf() - options.maxAge)) {
+                if (item.storedOn < (new Date().valueOf() - options.maxAge) && this.amount() > options.minAmount) {
                     this.removeItem({ path, auth, options });
                     return null;
                 }
@@ -80,6 +80,7 @@ exports.BaseResolver = BaseResolver;
 class Tresor {
     constructor(options) {
         const _default = {
+            minAmount: 0,
             maxAmount: 100,
             maxAge: 60000,
             auth: () => null,
@@ -90,6 +91,9 @@ class Tresor {
         };
         Object.assign(_default, options);
         this.options = _default;
+        if (this.options.minAmount >= this.options.maxAmount) {
+            throw "TRESOR: minAmount cannot be greater or equal than maxAmount";
+        }
         if (this.options.maxAmount < 1) {
             throw "TRESOR: maxAmount needs to be 1 or higher";
         }
@@ -119,19 +123,30 @@ class Tresor {
                 }
                 req.$tresor = {
                     isCached: true,
-                    value: cached
+                    value: cached,
+                    instance: this
                 };
             }
             else {
                 if (this.options.onCacheMiss)
                     this.options.onCacheMiss(req.originalUrl, new Date().valueOf() - beforeCache);
             }
-            res.$tresor = (value) => __awaiter(this, void 0, void 0, function* () {
-                const _value = value == "string" ? value : JSON.stringify(value);
+            const cacheFun = (value) => __awaiter(this, void 0, void 0, function* () {
+                let _value = value;
+                if (typeof value == "object")
+                    _value = JSON.stringify(value);
                 if (this.options.shouldCache(req, res))
                     yield this.options.resolver.tryCache(req.originalUrl, auth, _value, this.options);
-                this.sendCached(res, _value);
+                return _value;
             });
+            res.$tresor = {
+                send: (value) => __awaiter(this, void 0, void 0, function* () {
+                    const _value = yield res.$tresor.cache(value);
+                    this.sendCached(res, _value);
+                    return _value;
+                }),
+                cache: cacheFun
+            };
             next();
         });
     }

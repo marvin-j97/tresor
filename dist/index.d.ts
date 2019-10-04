@@ -2,6 +2,7 @@ import express from "express";
 interface ITresorInject {
     isCached: boolean;
     value: string;
+    instance: Tresor;
 }
 export interface IResolverContext {
     path: string;
@@ -14,7 +15,10 @@ declare global {
             $tresor?: ITresorInject;
         }
         interface Response {
-            $tresor: (value: object | string) => void;
+            $tresor: {
+                cache: (value: object | string) => Promise<string>;
+                send: (value: object | string) => Promise<string>;
+            };
         }
     }
 }
@@ -25,6 +29,7 @@ declare type CacheItem = {
     storedOn: number;
 };
 export interface ITresorOptions {
+    minAmount: number;
     maxAmount: number;
     maxAge: number;
     resolver: BaseResolver;

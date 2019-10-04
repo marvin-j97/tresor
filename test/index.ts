@@ -1,51 +1,10 @@
-import express from "express"
 import chai, { expect } from 'chai'
 import 'mocha'
 import chaiHttp from "chai-http"
 import { Tresor, FileResolver } from "../src/index"
+import app from "./app";
 
 chai.use(chaiHttp)
-
-const app = express()
-
-app.get("/memory/slow-html",
-  new Tresor({ resType: "html", maxAge: 500 }).init(),
-  async (req: express.Request, res: express.Response) => {
-    setTimeout(() => {
-      res.$tresor("Hello world!");
-    }, 500)
-  }
-)
-
-app.get("/memory/slow-json",
-  new Tresor({ maxAge: 500 }).init(),
-  async (req: express.Request, res: express.Response) => {
-    setTimeout(() => {
-      res.$tresor({ hello: "world" });
-    }, 500)
-  }
-)
-
-app.get("/file/slow-html",
-  new Tresor({ resType: "html", maxAge: 500 }).init(),
-  async (req: express.Request, res: express.Response) => {
-    setTimeout(() => {
-      res.$tresor("Hello world!");
-    }, 500)
-  }
-)
-
-app.get("/file/slow-json",
-  new Tresor({
-    maxAge: 500,
-    resolver: new FileResolver("test/cache")
-  }).init(),
-  async (req: express.Request, res: express.Response) => {
-    setTimeout(() => {
-      res.$tresor({ hello: "world" });
-    }, 500)
-  }
-)
 
 describe('server', () => {
   before(function () {

@@ -3,6 +3,7 @@ import express from "express"
 interface ITresorInject {
   isCached: boolean;
   value: string;
+  instance: Tresor;
 }
 
 export interface IResolverContext {
@@ -17,7 +18,10 @@ declare global {
       $tresor?: ITresorInject
     }
     export interface Response {
-      $tresor: (value: object | string) => void
+      $tresor: {
+        cache: (value: object | string) => Promise<string>,
+        send: (value: object | string) => Promise<string>
+      }
     }
   }
 }
@@ -26,15 +30,27 @@ type AuthFunction = (req: express.Request, res: express.Response) => string | nu
 type CacheItem = { path: string, auth: string | null, storedOn: number }
 
 export interface ITresorOptions {
+  // Ignore expired items, as long as minAmount is not reached (default = 0)
+  minAmount: number
+  // Only allow limited amount of items (default = 100)
   maxAmount: number
+  // Max age in ms (default = 60000 aka. 1 minute)
   maxAge: number
+  // Resolver to use (default = MemoryResolver)
   resolver: BaseResolver
+  // Authentication cache items will be signed with (default = () => null), null = no authentication
   auth: AuthFunction
+  // If true, cached content is not automatically sent to client, but rather exposed in request (default = false)
   manualResponse: boolean
+  // Response type (default = "json")
   resType: "json" | "html"
+  // Whether content should be cached at all (default = () => true)
   shouldCache: (req: express.Request, res: express.Response) => boolean
+  // Cache Hit hook (default = undefined)
   onCacheHit?: (path: string, time: number) => void
+  // Cache Miss hook (default = undefined)
   onCacheMiss?: (path: string, time: number) => void
+  // Cache Full hook (default = undefined)
   onCacheFull?: () => void
 }
 
@@ -71,8 +87,9 @@ export abstract class BaseResolver {
     const item = this.getItem(path, auth, options)
 
     if (item) {
-      if (item.storedOn < (new Date().valueOf() - options.maxAge)) {
-        // Cache miss: Cached item too old
+      // Cache minAmount will ignore cache age if above 0
+      if (item.storedOn < (new Date().valueOf() - options.maxAge) && this.amount() > options.minAmount) {
+        // Cache miss: Cached item too old && minAmount reached
         this.removeItem({ path, auth, options })
         return null
       }
@@ -104,14 +121,14 @@ export abstract class BaseResolver {
   }
 
   public async clear() {
-    await this.clearSelf();
-    this.items = [];
+    await this.clearSelf()
+    this.items = []
   }
 
   protected abstract store(context: IResolverContext, value: string): Promise<void>
   protected abstract retrieve(context: IResolverContext): Promise<string | null>
   protected abstract remove(context: IResolverContext): Promise<void>
-  protected abstract clearSelf(): Promise<void>;
+  protected abstract clearSelf(): Promise<void>
 }
 
 export class Tresor {
@@ -119,6 +136,7 @@ export class Tresor {
 
   constructor(options?: Partial<ITresorOptions>) {
     const _default: ITresorOptions = {
+      minAmount: 0,
       maxAmount: 100,
       maxAge: 60000,
       auth: () => null,
@@ -130,6 +148,10 @@ export class Tresor {
 
     Object.assign(_default, options)
     this.options = _default
+
+    if (this.options.minAmount >= this.options.maxAmount) {
+      throw "TRESOR: minAmount cannot be greater or equal than maxAmount"
+    }
 
     if (this.options.maxAmount < 1) {
       throw "TRESOR: maxAmount needs to be 1 or higher"
@@ -148,19 +170,19 @@ export class Tresor {
   }
 
   init() {
-    return this.middleware();
+    return this.middleware()
   }
 
   middleware() {
     return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const beforeCache = +new Date();
-      const auth = this.options.auth(req, res);
+      const beforeCache = +new Date()
+      const auth = this.options.auth(req, res)
       const cached = await this.options.resolver.checkCache(req.originalUrl, auth, this.options)
 
       if (cached != null) {
 
         if (this.options.onCacheHit)
-          this.options.onCacheHit(req.originalUrl, new Date().valueOf() - beforeCache);
+          this.options.onCacheHit(req.originalUrl, new Date().valueOf() - beforeCache)
 
         if (this.options.manualResponse === false) {
           return this.sendCached(res, cached)
@@ -168,20 +190,33 @@ export class Tresor {
 
         req.$tresor = {
           isCached: true,
-          value: cached
+          value: cached,
+          instance: this
         }
       }
       else {
         if (this.options.onCacheMiss)
-          this.options.onCacheMiss(req.originalUrl, new Date().valueOf() - beforeCache);
+          this.options.onCacheMiss(req.originalUrl, new Date().valueOf() - beforeCache)
       }
 
-      res.$tresor = async (value: object | string) => {
-        const _value = value == "string" ? value : JSON.stringify(value);
+      const cacheFun = async (value: object | string) => {
+        let _value = value as string
+
+        if (typeof value == "object")
+          _value = JSON.stringify(value)
 
         if (this.options.shouldCache(req, res))
           await this.options.resolver.tryCache(req.originalUrl, auth, _value, this.options)
-        this.sendCached(res, _value)
+        return _value
+      }
+
+      res.$tresor = {
+        send: async (value: object | string) => {
+          const _value = await res.$tresor.cache(value)
+          this.sendCached(res, _value)
+          return _value
+        },
+        cache: cacheFun
       }
 
       next()
@@ -189,7 +224,7 @@ export class Tresor {
   }
 
   async clear(): Promise<void> {
-    await this.options.resolver.clear();
+    await this.options.resolver.clear()
   }
 }
 
