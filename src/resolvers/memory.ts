@@ -1,29 +1,25 @@
-import { BaseResolver, ITresorOptions, IResolverContext } from "../index";
+import { BaseResolver, IResolverContext } from "../index"
+import md5 from "md5"
 
+// Resolver using in-memory cache (default)
+// Hash indices are computed by hashing the http path + the authorization string using MD5
 export class MemoryResolver extends BaseResolver {
-  private internalStore = [] as { path: string, auth: string | null, value: string }[];
+  private internalStore = {} as { [key: string]: string }
 
   async store(context: IResolverContext, value: string) {
-    this.internalStore.push({
-      path: context.path,
-      auth: context.auth,
-      value
-    })
+    this.internalStore[md5(context.path + context.auth)] = value
   }
 
   async retrieve(context: IResolverContext) {
-    const item = this.internalStore.find(
-      item => item.path == context.path && item.auth == context.auth
-    )
-
-    return item ? item.value : null
+    const value = this.internalStore[md5(context.path + context.auth)]
+    return value ? value : null
   }
 
   async remove(context: IResolverContext) {
-    this.internalStore = this.internalStore.filter(item => !(item.path == context.path && item.auth == context.auth))
+    delete this.internalStore[md5(context.path + context.auth)]
   }
 
   async clearSelf() {
-    this.internalStore = []
+    this.internalStore = {}
   }
 }

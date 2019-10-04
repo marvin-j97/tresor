@@ -1,15 +1,18 @@
 import express from "express"
 
+// Injected cached content in request
+// (only relevant when using manualResponse)
 interface ITresorInject {
-  isCached: boolean;
-  value: string;
-  instance: Tresor;
+  isCached: boolean
+  value: string
+  instance: Tresor
 }
 
+// Context given to the resolver operations
 export interface IResolverContext {
-  path: string;
-  auth: string | null;
-  options: ITresorOptions;
+  path: string
+  auth: string | null
+  options: ITresorOptions
 }
 
 declare global {
@@ -26,9 +29,16 @@ declare global {
   }
 }
 
-type AuthFunction = (req: express.Request, res: express.Response) => string | null;
+// Returns a string (like a session token or user ID) that identifies some sort of authenticated entity
+// Cached items are signed with that string
+// Returns null for unauthenticated caches
+type AuthFunction = (req: express.Request, res: express.Response) => string | null
+
+// Stored cache item metadata
+// Cached content location (like JSON or HTML) is resolver-specific
 type CacheItem = { path: string, auth: string | null, storedOn: number }
 
+// Constructor options
 export interface ITresorOptions {
   // Ignore expired items, as long as minAmount is not reached (default = 0)
   minAmount: number
@@ -54,6 +64,8 @@ export interface ITresorOptions {
   onCacheFull?: () => void
 }
 
+// Base class to create new Resolvers
+// Public methods should not be called by the deriving resolvers
 export abstract class BaseResolver {
   protected items = [] as CacheItem[]
 
@@ -111,7 +123,7 @@ export abstract class BaseResolver {
         const oldest = (<CacheItem>this.items.shift())
         await this.removeItem({ path: oldest.path, auth: oldest.auth, options })
         if (options.onCacheFull)
-          options.onCacheFull();
+          options.onCacheFull()
       }
       await this.storeItem({ path, auth, options }, value)
     }
@@ -128,6 +140,8 @@ export abstract class BaseResolver {
   protected abstract clearSelf(): Promise<void>
 }
 
+// Tresor instance
+// Use .init() or .middleware() when adding to an Express route
 export class Tresor {
   options: ITresorOptions
 
