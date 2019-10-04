@@ -157,7 +157,8 @@ export class Tresor {
       resolver: new MemoryResolver()
     }
 
-    Object.assign(_default, options)
+    if (options)
+      Object.assign(_default, options)
     this.options = _default
 
     if (this.options.minAmount >= this.options.maxAmount) {
