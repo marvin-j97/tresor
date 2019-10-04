@@ -1,5 +1,5 @@
 import express from "express"
-import { Tresor } from "../../src/index"
+import { Tresor, FileResolver } from "../../src/index"
 
 const app = express()
 
@@ -8,8 +8,15 @@ async function fromDatabase(): Promise<object> {
   return new Promise(r => setTimeout(() => r({ hello: "world" }), 5000));
 }
 
+const fsCache = new Tresor({
+  maxAge: 5000,
+  resolver: new FileResolver(),
+  onCacheHit: (path: string, time: number) => console.log(`Cache hit ${path} ${time}ms`),
+  onCacheMiss: (path: string, time: number) => console.log(`Cache miss ${path} ${time}ms`),
+})
+
 app.get("/slow-renderer",
-  new Tresor({ maxAge: 300000 }).middleware(),
+  fsCache.init(),
   async (req: express.Request, res: express.Response) => {
     res.$tresor(await fromDatabase());
   }
@@ -20,7 +27,7 @@ app.get("/query",
     console.log(`${req.method} ${req.originalUrl}: ${new Date().toLocaleString()}`)
     next()
   },
-  new Tresor({ resType: "html", maxAge: 5000 }).middleware(),
+  new Tresor({ resType: "html", maxAge: 5000 }).init(),
   async (req: express.Request, res: express.Response) => {
     console.log("Rendering page... I'm so slow :(")
     setTimeout(() => {

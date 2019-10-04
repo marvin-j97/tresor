@@ -2,14 +2,14 @@ import express from "express"
 import chai, { expect } from 'chai'
 import 'mocha'
 import chaiHttp from "chai-http"
-import { Tresor, MemoryResolver } from "../src/index"
+import { Tresor, FileResolver } from "../src/index"
 
 chai.use(chaiHttp)
 
 const app = express()
 
-app.get("/slow-html-renderer",
-  new Tresor({ resType: "html", maxAge: 1000 }).middleware(),
+app.get("/memory/slow-html",
+  new Tresor({ resType: "html", maxAge: 500 }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       (<any>res.$tresor)("Hello world!");
@@ -17,8 +17,29 @@ app.get("/slow-html-renderer",
   }
 )
 
-app.get("/slow-json-renderer",
-  new Tresor({ maxAge: 1000 }).middleware(),
+app.get("/memory/slow-json",
+  new Tresor({ maxAge: 500 }).init(),
+  async (req: express.Request, res: express.Response) => {
+    setTimeout(() => {
+      (<any>res.$tresor)({ hello: "world" });
+    }, 500)
+  }
+)
+
+app.get("/file/slow-html",
+  new Tresor({ resType: "html", maxAge: 500 }).init(),
+  async (req: express.Request, res: express.Response) => {
+    setTimeout(() => {
+      (<any>res.$tresor)("Hello world!");
+    }, 500)
+  }
+)
+
+app.get("/file/slow-json",
+  new Tresor({
+    maxAge: 500,
+    resolver: new FileResolver("test/cache")
+  }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       (<any>res.$tresor)({ hello: "world" });
@@ -54,40 +75,39 @@ describe('Options', () => {
   })
 })
 
-describe('Cache', () => {
-
+describe('In-Memory Cache', () => {
   it('Basic HTML cache', async function () {
     this.timeout(5000);
 
     let before = +new Date();
     let res = await chai.request(app)
-      .get('/slow-html-renderer');
+      .get('/memory/slow-html');
     let after = +new Date();
 
     expect(res.text).to.equal("Hello world!");
-    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 1 second
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
 
     // Trigger cached response 50 times
     for (let i = 0; i < 50; i++) {
       before = +new Date();
       res = await chai.request(app)
-        .get('/slow-html-renderer');
+        .get('/memory/slow-html');
       after = +new Date();
 
       expect(res.text).to.equal("Hello world!");
-      expect(after - before).to.be.lessThan(5); // Cached response, should be less than 10ms
+      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
     }
 
     // Wait for cache expiration
-    await new Promise(r => setTimeout(() => r(), 1500));
+    await new Promise(r => setTimeout(() => r(), 600));
 
     before = +new Date();
     res = await chai.request(app)
-      .get('/slow-html-renderer');
+      .get('/memory/slow-html');
     after = +new Date();
 
     expect(res.text).to.equal("Hello world!");
-    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 1 second
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
   })
 
   it('Basic JSON cache', async function () {
@@ -95,33 +115,102 @@ describe('Cache', () => {
 
     let before = +new Date();
     let res = await chai.request(app)
-      .get('/slow-json-renderer');
+      .get('/memory/slow-json');
     let after = +new Date();
 
     expect(res.body).to.deep.equal({ hello: "world" });
-    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 1 second
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
 
     // Trigger cached response 50 times
     for (let i = 0; i < 50; i++) {
       before = +new Date();
       res = await chai.request(app)
-        .get('/slow-json-renderer');
+        .get('/memory/slow-json');
       after = +new Date();
 
       expect(res.body).to.deep.equal({ hello: "world" });
-      expect(after - before).to.be.lessThan(5); // Cached response, should be less than 10ms
+      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
     }
 
     // Wait for cache expiration
-    await new Promise(r => setTimeout(() => r(), 1500));
+    await new Promise(r => setTimeout(() => r(), 600));
 
     before = +new Date();
     res = await chai.request(app)
-      .get('/slow-json-renderer');
+      .get('/memory/slow-json');
     after = +new Date();
 
     expect(res.body).to.deep.equal({ hello: "world" });
-    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 1 second
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
   })
 })
 
+describe('File Cache', () => {
+  it('Basic HTML cache', async function () {
+    this.timeout(5000);
+
+    let before = +new Date();
+    let res = await chai.request(app)
+      .get('/file/slow-html');
+    let after = +new Date();
+
+    expect(res.text).to.equal("Hello world!");
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
+
+    // Trigger cached response 50 times
+    for (let i = 0; i < 50; i++) {
+      before = +new Date();
+      res = await chai.request(app)
+        .get('/file/slow-html');
+      after = +new Date();
+
+      expect(res.text).to.equal("Hello world!");
+      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
+    }
+
+    // Wait for cache expiration
+    await new Promise(r => setTimeout(() => r(), 600));
+
+    before = +new Date();
+    res = await chai.request(app)
+      .get('/file/slow-html');
+    after = +new Date();
+
+    expect(res.text).to.equal("Hello world!");
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
+  })
+
+  it('Basic JSON cache', async function () {
+    this.timeout(5000);
+
+    let before = +new Date();
+    let res = await chai.request(app)
+      .get('/file/slow-json');
+    let after = +new Date();
+
+    expect(res.body).to.deep.equal({ hello: "world" });
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
+
+    // Trigger cached response 50 times
+    for (let i = 0; i < 50; i++) {
+      before = +new Date();
+      res = await chai.request(app)
+        .get('/file/slow-json');
+      after = +new Date();
+
+      expect(res.body).to.deep.equal({ hello: "world" });
+      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
+    }
+
+    // Wait for cache expiration
+    await new Promise(r => setTimeout(() => r(), 600));
+
+    before = +new Date();
+    res = await chai.request(app)
+      .get('/file/slow-json');
+    after = +new Date();
+
+    expect(res.body).to.deep.equal({ hello: "world" });
+    expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
+  })
+})
