@@ -18,7 +18,7 @@ declare global {
         }
     }
 }
-declare type AuthFunction = (req: express.Request) => string | null;
+declare type AuthFunction = (req: express.Request, res: express.Response) => string | null;
 declare type CacheItem = {
     path: string;
     auth: string | null;
@@ -34,6 +34,7 @@ export interface ITresorOptions {
     shouldCache: (req: express.Request, res: express.Response) => boolean;
     onCacheHit?: (path: string, time: number) => void;
     onCacheMiss?: (path: string, time: number) => void;
+    onCacheFull?: () => void;
 }
 export declare abstract class BaseResolver {
     protected items: CacheItem[];
@@ -41,8 +42,8 @@ export declare abstract class BaseResolver {
     private getItem;
     private storeItem;
     private removeItem;
-    checkCache(req: express.Request, options: ITresorOptions): Promise<string | null>;
-    tryCache(value: string, req: express.Request, options: ITresorOptions): Promise<void>;
+    checkCache(path: string, auth: string | null, options: ITresorOptions): Promise<string | null>;
+    tryCache(path: string, auth: string | null, value: string, options: ITresorOptions): Promise<void>;
     clear(): Promise<void>;
     protected abstract store(context: IResolverContext, value: string): Promise<void>;
     protected abstract retrieve(context: IResolverContext): Promise<string | null>;

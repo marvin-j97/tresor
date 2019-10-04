@@ -19,7 +19,7 @@ export class FileResolver extends BaseResolver {
 
   constructor(basePath?: string) {
     super();
-    this.basePath = basePath || "./cache";
+    this.basePath = basePath || "./tresor_cache";
     const folder = nodePath.join(process.cwd(), this.basePath);
 
     (async () => {

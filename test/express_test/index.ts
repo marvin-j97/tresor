@@ -5,7 +5,7 @@ const app = express()
 
 // Das gehört nicht zur Library
 async function fromDatabase(): Promise<object> {
-  return new Promise(r => setTimeout(() => r({ hello: "world" }), 5000));
+  return new Promise(r => setTimeout(() => r({ hello: "world" }), 2500));
 }
 
 const fsCache = new Tresor({
@@ -22,18 +22,26 @@ app.get("/slow-renderer",
   }
 )
 
+const htmlCache = new Tresor({
+  resType: "html",
+  maxAge: 300000,
+  maxAmount: 5,
+  onCacheHit: (path: string, time: number) => console.log(`Supercharged render using cache: ${path} ${time}ms`),
+  onCacheFull: () => console.log("Cache full!")
+})
+
 app.get("/query",
   (req, res, next) => {
     console.log(`${req.method} ${req.originalUrl}: ${new Date().toLocaleString()}`)
     next()
   },
-  new Tresor({ resType: "html", maxAge: 5000 }).init(),
+  htmlCache.init(),
   async (req: express.Request, res: express.Response) => {
     console.log("Rendering page... I'm so slow :(")
     setTimeout(() => {
       console.log("Rendered in 5000ms");
       res.$tresor(`Hello ${req.query.name}!`);
-    }, 5000)
+    }, 2500)
   }
 )
 

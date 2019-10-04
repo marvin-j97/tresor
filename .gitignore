@@ -88,3 +88,4 @@ typings/
 .dynamodb/
 
 test/cache
+tresor_cache

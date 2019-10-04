@@ -26,7 +26,7 @@ class FileResolver extends index_1.BaseResolver {
     constructor(basePath) {
         super();
         this.files = [];
-        this.basePath = basePath || "./cache";
+        this.basePath = basePath || "./tresor_cache";
         const folder = path_1.default.join(process.cwd(), this.basePath);
         (() => __awaiter(this, void 0, void 0, function* () {
             mkdirp(path_1.default.relative(process.cwd(), folder), (err) => { });

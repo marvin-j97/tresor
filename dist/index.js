@@ -37,17 +37,16 @@ class BaseResolver {
                 this.items.splice(index, 1);
         });
     }
-    checkCache(req, options) {
+    checkCache(path, auth, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const auth = options.auth(req);
-            const item = this.getItem(req.originalUrl, auth, options);
+            const item = this.getItem(path, auth, options);
             if (item) {
                 if (item.storedOn < (new Date().valueOf() - options.maxAge)) {
-                    this.removeItem({ path: req.originalUrl, auth, options });
+                    this.removeItem({ path, auth, options });
                     return null;
                 }
                 else {
-                    const cached = yield this.retrieve({ path: req.originalUrl, auth, options });
+                    const cached = yield this.retrieve({ path, auth, options });
                     return cached;
                 }
             }
@@ -56,16 +55,17 @@ class BaseResolver {
             }
         });
     }
-    tryCache(value, req, options) {
+    tryCache(path, auth, value, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const auth = options.auth(req);
-            const item = this.getItem(req.originalUrl, auth, options);
+            const item = this.getItem(path, auth, options);
             if (!item) {
                 if (this.amount() == options.maxAmount) {
                     const oldest = this.items.shift();
                     yield this.removeItem({ path: oldest.path, auth: oldest.auth, options });
+                    if (options.onCacheFull)
+                        options.onCacheFull();
                 }
-                yield this.storeItem({ path: req.originalUrl, auth, options }, value);
+                yield this.storeItem({ path, auth, options }, value);
             }
         });
     }
@@ -85,7 +85,7 @@ class Tresor {
             auth: () => null,
             manualResponse: false,
             resType: "json",
-            shouldCache: (req, res) => true,
+            shouldCache: () => true,
             resolver: new memory_1.MemoryResolver()
         };
         Object.assign(_default, options);
@@ -109,7 +109,8 @@ class Tresor {
     middleware() {
         return (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             const beforeCache = +new Date();
-            const cached = yield this.options.resolver.checkCache(req, this.options);
+            const auth = this.options.auth(req, res);
+            const cached = yield this.options.resolver.checkCache(req.originalUrl, auth, this.options);
             if (cached != null) {
                 if (this.options.onCacheHit)
                     this.options.onCacheHit(req.originalUrl, new Date().valueOf() - beforeCache);
@@ -126,11 +127,9 @@ class Tresor {
                     this.options.onCacheMiss(req.originalUrl, new Date().valueOf() - beforeCache);
             }
             res.$tresor = (value) => __awaiter(this, void 0, void 0, function* () {
-                let _value = value;
-                if (typeof value == "object")
-                    _value = JSON.stringify(value);
+                const _value = value == "string" ? value : JSON.stringify(value);
                 if (this.options.shouldCache(req, res))
-                    yield this.options.resolver.tryCache(_value, req, this.options);
+                    yield this.options.resolver.tryCache(req.originalUrl, auth, _value, this.options);
                 this.sendCached(res, _value);
             });
             next();
