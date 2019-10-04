@@ -2,7 +2,8 @@
   "name": "tresor",
   "version": "0.1.0",
   "description": "Express server-side caching",
-  "main": "build/",
+  "main": "dist/",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "mocha --bail --exit -r ts-node/register test/index.ts"
   },
