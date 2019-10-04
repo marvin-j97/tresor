@@ -5,6 +5,12 @@ interface ITresorInject {
   value: string;
 }
 
+export interface IResolverContext {
+  path: string;
+  auth: string | null;
+  options: ITresorOptions;
+}
+
 declare global {
   namespace Express {
     export interface Request {
@@ -20,13 +26,13 @@ type AuthFunction = (req: express.Request) => string | null;
 type CacheItem = { path: string, auth: string | null, storedOn: number }
 
 export interface ITresorOptions {
-  maxAmount?: number
-  maxAge?: number
-  resolver?: BaseResolver
-  auth?: AuthFunction
-  manualResponse?: boolean
-  resType?: "json" | "html"
-  shouldCache?: (req: express.Request, res: express.Response) => boolean
+  maxAmount: number
+  maxAge: number
+  resolver: BaseResolver
+  auth: AuthFunction
+  manualResponse: boolean
+  resType: "json" | "html"
+  shouldCache: (req: express.Request, res: express.Response) => boolean
   onCacheHit?: (path: string, time: number) => void
   onCacheMiss?: (path: string, time: number) => void
 }
@@ -42,37 +48,37 @@ export abstract class BaseResolver {
     return this.items.find(item => item.path == path && item.auth == auth)
   }
 
-  private async storeItem(path: string, auth: string | null, value: string, options: ITresorOptions) {
-    await this.store(path, auth, value, options)
+  private async storeItem(context: IResolverContext, value: string) {
+    await this.store(context, value)
     this.items.push({
-      path,
-      auth,
+      path: context.path,
+      auth: context.auth,
       storedOn: +new Date
     })
   }
 
-  private async removeItem(path: string, auth: string | null, options: ITresorOptions) {
-    await this.remove(path, auth, options)
+  private async removeItem(context: IResolverContext) {
+    await this.remove(context)
     const index = this.items.findIndex(
-      item => item.path == path && item.auth == auth
+      item => item.path == context.path && item.auth == context.auth
     )
     if (index > -1)
       this.items.splice(index, 1)
   }
 
   public async checkCache(req: express.Request, options: ITresorOptions): Promise<string | null> {
-    const auth = (<AuthFunction>(<any>options).auth)(req)
+    const auth = options.auth(req)
     const item = this.getItem(req.originalUrl, auth, options)
 
     if (item) {
-      if (item.storedOn < (new Date().valueOf() - (<number>options.maxAge))) {
+      if (item.storedOn < (new Date().valueOf() - options.maxAge)) {
         // Cache miss: Cached item too old
-        this.removeItem(req.originalUrl, auth, options)
+        this.removeItem({ path: req.originalUrl, auth, options })
         return null
       }
       else {
         // Cache hit
-        const cached = await this.retrieve(req.originalUrl, auth, options)
+        const cached = await this.retrieve({ path: req.originalUrl, auth, options })
         return cached
       }
     }
@@ -83,15 +89,15 @@ export abstract class BaseResolver {
   }
 
   public async tryCache(value: string, req: express.Request, options: ITresorOptions) {
-    const auth = (<AuthFunction>(<any>options).auth)(req)
+    const auth = options.auth(req)
     const item = this.getItem(req.originalUrl, auth, options)
 
     if (!item) {
-      if (this.amount() == (<number>options.maxAmount)) {
+      if (this.amount() == options.maxAmount) {
         const oldest = (<CacheItem>this.items.shift())
-        await this.removeItem(oldest.path, oldest.auth, options)
+        await this.removeItem({ path: oldest.path, auth: oldest.auth, options })
       }
-      await this.storeItem(req.originalUrl, auth, value, options)
+      await this.storeItem({ path: req.originalUrl, auth, options }, value)
     }
   }
 
@@ -100,16 +106,16 @@ export abstract class BaseResolver {
     this.items = [];
   }
 
-  protected abstract store(path: string, auth: string | null, value: string, options: ITresorOptions): Promise<void>
-  protected abstract retrieve(path: string, auth: string | null, options: ITresorOptions): Promise<string | null>
-  protected abstract remove(path: string, auth: string | null, options: ITresorOptions): Promise<void>
+  protected abstract store(context: IResolverContext, value: string): Promise<void>
+  protected abstract retrieve(context: IResolverContext): Promise<string | null>
+  protected abstract remove(context: IResolverContext): Promise<void>
   protected abstract clearSelf(): Promise<void>;
 }
 
 export class Tresor {
   options: ITresorOptions
 
-  constructor(options?: ITresorOptions) {
+  constructor(options?: Partial<ITresorOptions>) {
     const _default: ITresorOptions = {
       maxAmount: 100,
       maxAge: 60000,
@@ -122,6 +128,14 @@ export class Tresor {
 
     Object.assign(_default, options)
     this.options = _default
+
+    if (this.options.maxAmount < 1) {
+      throw "TRESOR: maxAmount needs to be 1 or higher"
+    }
+
+    if (this.options.maxAge < 1) {
+      throw "TRESOR: maxAge needs to be 1 or higher"
+    }
   }
 
   private sendCached(res: express.Response, value: string) {
@@ -138,7 +152,7 @@ export class Tresor {
   middleware() {
     return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
       const beforeCache = +new Date();
-      const cached = await (<BaseResolver>this.options.resolver).checkCache(req, this.options)
+      const cached = await this.options.resolver.checkCache(req, this.options)
 
       if (cached != null) {
 
@@ -165,8 +179,8 @@ export class Tresor {
         if (typeof value == "object")
           _value = JSON.stringify(value);
 
-        if ((<(req: express.Request, res: express.Response) => boolean>this.options.shouldCache)(req, res))
-          await (<BaseResolver>this.options.resolver).tryCache(_value, req, this.options)
+        if (this.options.shouldCache(req, res))
+          await this.options.resolver.tryCache(_value, req, this.options)
         this.sendCached(res, _value)
       }
 
@@ -175,7 +189,7 @@ export class Tresor {
   }
 
   async clear(): Promise<void> {
-    await (<BaseResolver>this.options.resolver).clear();
+    await this.options.resolver.clear();
   }
 }
 

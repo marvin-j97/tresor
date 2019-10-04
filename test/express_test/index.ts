@@ -32,7 +32,7 @@ app.get("/query",
     console.log("Rendering page... I'm so slow :(")
     setTimeout(() => {
       console.log("Rendered in 5000ms");
-      (<any>res.$tresor)(`Hello ${req.query.name}!`);
+      res.$tresor(`Hello ${req.query.name}!`);
     }, 5000)
   }
 )

@@ -12,7 +12,7 @@ app.get("/memory/slow-html",
   new Tresor({ resType: "html", maxAge: 500 }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
-      (<any>res.$tresor)("Hello world!");
+      res.$tresor("Hello world!");
     }, 500)
   }
 )
@@ -21,7 +21,7 @@ app.get("/memory/slow-json",
   new Tresor({ maxAge: 500 }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
-      (<any>res.$tresor)({ hello: "world" });
+      res.$tresor({ hello: "world" });
     }, 500)
   }
 )
@@ -30,7 +30,7 @@ app.get("/file/slow-html",
   new Tresor({ resType: "html", maxAge: 500 }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
-      (<any>res.$tresor)("Hello world!");
+      res.$tresor("Hello world!");
     }, 500)
   }
 )
@@ -42,7 +42,7 @@ app.get("/file/slow-json",
   }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
-      (<any>res.$tresor)({ hello: "world" });
+      res.$tresor({ hello: "world" });
     }, 500)
   }
 )

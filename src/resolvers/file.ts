@@ -1,4 +1,4 @@
-import { BaseResolver, ITresorOptions } from "../index";
+import { BaseResolver, ITresorOptions, IResolverContext } from "../index";
 import md5 from "md5";
 import nodePath from "path";
 
@@ -23,7 +23,7 @@ export class FileResolver extends BaseResolver {
     const folder = nodePath.join(process.cwd(), this.basePath);
 
     (async () => {
-      mkdirp(nodePath.relative(process.cwd(), folder), (err: any) => {});
+      mkdirp(nodePath.relative(process.cwd(), folder), (err: any) => { });
     })();
   }
 
@@ -36,7 +36,7 @@ export class FileResolver extends BaseResolver {
 
   private async getFile(path: string, auth: string | null, options: ITresorOptions): Promise<string | null> {
     try {
-      const filePath = this.filePath(path, auth, (<"json" | "html">options.resType));
+      const filePath = this.filePath(path, auth, options.resType);
 
       if (await promiseExist(filePath))
         return await promiseRead(filePath, "utf-8");
@@ -47,9 +47,9 @@ export class FileResolver extends BaseResolver {
     }
   }
 
-  async store(path: string, auth: string | null, value: string, options: ITresorOptions) {
+  async store(context: IResolverContext, value: string) {
     try {
-      const filePath = this.filePath(path, auth, (<"json" | "html">options.resType));
+      const filePath = this.filePath(context.path, context.auth, context.options.resType);
       await promiseWrite(filePath, value);
       this.files.push(filePath);
     }
@@ -58,14 +58,14 @@ export class FileResolver extends BaseResolver {
     }
   }
 
-  async retrieve(path: string, auth: string | null, options: ITresorOptions) {
-    const content = await this.getFile(path, auth, options);
+  async retrieve(context: IResolverContext) {
+    const content = await this.getFile(context.path, context.auth, context.options);
     return content;
   }
 
-  async remove(path: string, auth: string | null, options: ITresorOptions) {
+  async remove(context: IResolverContext) {
     try {
-      const filePath = this.filePath(path, auth, (<"json" | "html">options.resType));
+      const filePath = this.filePath(context.path, context.auth, context.options.resType);
       if (await promiseExist(filePath)) {
         await promiseUnlink(filePath);
 

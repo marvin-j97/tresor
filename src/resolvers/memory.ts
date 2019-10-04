@@ -1,27 +1,27 @@
-import { BaseResolver, ITresorOptions } from "../index";
+import { BaseResolver, ITresorOptions, IResolverContext } from "../index";
 
 export class MemoryResolver extends BaseResolver {
   private internalStore = [] as { path: string, auth: string | null, value: string }[];
 
-  async store(path: string, auth: string | null, value: string, options: ITresorOptions) {
+  async store(context: IResolverContext, value: string) {
     this.internalStore.push({
-      path,
-      auth,
+      path: context.path,
+      auth: context.auth,
       value
     })
   }
 
-  async retrieve(path: string, auth: string | null, options: ITresorOptions) {
+  async retrieve(context: IResolverContext) {
     const item = this.internalStore.find(
-      item => item.path == path && item.auth == auth
+      item => item.path == context.path && item.auth == context.auth
     )
 
     return item ? item.value : null
   }
 
-  async remove(path: string, auth: string | null, options: ITresorOptions) {
+  async remove(context: IResolverContext) {
     const index = this.internalStore.findIndex(
-      item => item.path == path && item.auth == auth
+      item => item.path == context.path && item.auth == context.auth
     )
     if (index > -1)
       this.internalStore.splice(index, 1)
