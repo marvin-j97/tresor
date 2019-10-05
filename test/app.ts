@@ -4,7 +4,7 @@ import { Tresor, FileResolver } from "../src/index"
 const app = express()
 
 app.get("/memory/slow-html",
-  new Tresor({ resType: "html", maxAge: 500 }).init(),
+  new Tresor({ responseType: "html", maxAge: "500ms" }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       res.$tresor.send("Hello world!");
@@ -13,7 +13,7 @@ app.get("/memory/slow-html",
 )
 
 app.get("/memory/slow-json",
-  new Tresor({ maxAge: 500 }).init(),
+  Tresor.json({ maxAge: "500ms" }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       res.$tresor.send({ hello: "world" });
@@ -22,7 +22,7 @@ app.get("/memory/slow-json",
 )
 
 app.get("/file/slow-html",
-  new Tresor({ resType: "html", maxAge: 500 }).init(),
+  Tresor.html({ maxAge: "500ms" }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       res.$tresor.send("Hello world!");
@@ -32,7 +32,7 @@ app.get("/file/slow-html",
 
 app.get("/file/slow-json",
   new Tresor({
-    maxAge: 500,
+    maxAge: "500ms",
     resolver: new FileResolver("test/cache")
   }).init(),
   async (req: express.Request, res: express.Response) => {

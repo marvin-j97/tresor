@@ -1,4 +1,5 @@
 import express from "express"
+import { parseDuration } from "./time_extractor"
 
 // Injected cached content in request
 // (only relevant when using manualResponse)
@@ -40,12 +41,18 @@ type CacheItem = { path: string, auth: string | null, storedOn: number }
 
 // Constructor options
 export interface ITresorOptions {
+  // Discard strategy to use when adding an item to an already full cache
+  // discardStrategy: "fifo"
+  // Use timers to sweep expired cache items (default = true)
+  // Increases memory overhead
+  // useTimers: boolean
   // Ignore expired items, as long as minAmount is not reached (default = 0)
+  // This should increase cache hit chance, but will also increase memory usage and may lead to stale items
   minAmount: number
   // Only allow limited amount of items (default = 100)
   maxAmount: number
   // Max age in ms (default = 60000 aka. 1 minute)
-  maxAge: number
+  maxAge: number | string
   // Resolver to use (default = MemoryResolver)
   resolver: BaseResolver
   // Authentication cache items will be signed with (default = () => null), null = no authentication
@@ -53,7 +60,7 @@ export interface ITresorOptions {
   // If true, cached content is not automatically sent to client, but rather exposed in request (default = false)
   manualResponse: boolean
   // Response type (default = "json")
-  resType: "json" | "html"
+  responseType: "json" | "html"
   // Whether content should be cached at all (default = () => true)
   shouldCache: (req: express.Request, res: express.Response) => boolean
   // Cache Hit hook (default = undefined)
@@ -86,9 +93,8 @@ export abstract class BaseResolver {
     })
   }
 
-  private async removeItem(context: IResolverContext) {
+  public async removeItem(context: IResolverContext) {
     await this.remove(context)
-
     this.items = this.items.filter(item => !(item.path == context.path && item.auth == context.auth))
   }
 
@@ -96,14 +102,14 @@ export abstract class BaseResolver {
     const item = this.getItem(path, auth, options)
 
     if (item) {
-      // Cache minAmount will ignore cache age if above 0
-      if (item.storedOn < (new Date().valueOf() - options.maxAge) && this.amount() > options.minAmount) {
+      // minAmount will ignore cache age as long as there are less items in cache than minAmount
+      if (item.storedOn < (new Date().valueOf() - <number>options.maxAge) && this.amount() > options.minAmount) {
         // Cache miss: Cached item too old && minAmount reached
         this.removeItem({ path, auth, options })
         return null
       }
       else {
-        // Cache hit
+        // Cache hit: Retrieve and return
         const cached = await this.retrieve({ path, auth, options })
         return cached
       }
@@ -114,17 +120,24 @@ export abstract class BaseResolver {
     }
   }
 
-  public async tryCache(path: string, auth: string | null, value: string, options: ITresorOptions) {
+  private async removeOldest(options: ITresorOptions) {
+    const oldest = (<CacheItem>this.items.shift())
+    await this.removeItem({ path: oldest.path, auth: oldest.auth, options })
+  }
+
+  public async addToCache(path: string, auth: string | null, value: string, options: ITresorOptions) {
     const item = this.getItem(path, auth, options)
 
     if (!item) {
       if (this.amount() == options.maxAmount) {
         // Cache full
-        const oldest = (<CacheItem>this.items.shift())
-        await this.removeItem({ path: oldest.path, auth: oldest.auth, options })
+        // When an item is added when the cache is full, the oldest cache item is removed (FIFO)
+        await this.removeOldest(options)
+
         if (options.onCacheFull)
           options.onCacheFull()
       }
+      // Store new item
       await this.storeItem({ path, auth, options }, value)
     }
   }
@@ -145,14 +158,32 @@ export abstract class BaseResolver {
 export class Tresor {
   options: ITresorOptions
 
+  static html(options?: Partial<Omit<ITresorOptions, "responseType">>) {
+    let _options = {
+      ...options,
+      responseType: "html" as "html"
+    }
+
+    return new Tresor(_options)
+  }
+
+  static json(options?: Partial<Omit<ITresorOptions, "responseType">>) {
+    let _options = {
+      ...options,
+      responseType: "json" as "json"
+    }
+
+    return new Tresor(_options)
+  }
+
   constructor(options?: Partial<ITresorOptions>) {
     const _default: ITresorOptions = {
       minAmount: 0,
       maxAmount: 100,
-      maxAge: 60000,
+      maxAge: parseDuration("5 min"),
       auth: () => null,
       manualResponse: false,
-      resType: "json",
+      responseType: "json",
       shouldCache: () => true,
       resolver: new MemoryResolver()
     }
@@ -160,6 +191,8 @@ export class Tresor {
     if (options)
       Object.assign(_default, options)
     this.options = _default
+
+    this.options.maxAge = parseDuration(this.options.maxAge)
 
     if (this.options.minAmount >= this.options.maxAmount) {
       throw "TRESOR: minAmount cannot be greater or equal than maxAmount"
@@ -172,12 +205,13 @@ export class Tresor {
     if (this.options.maxAge < 1) {
       throw "TRESOR: maxAge needs to be 1 or higher"
     }
+
   }
 
   private sendCached(res: express.Response, value: string) {
-    if (this.options.resType === "json")
+    if (this.options.responseType === "json")
       res.json(JSON.parse(value))
-    else if (this.options.resType === "html")
+    else if (this.options.responseType === "html")
       res.send(value)
   }
 
@@ -218,7 +252,7 @@ export class Tresor {
           _value = JSON.stringify(value)
 
         if (this.options.shouldCache(req, res))
-          await this.options.resolver.tryCache(req.originalUrl, auth, _value, this.options)
+          await this.options.resolver.addToCache(req.originalUrl, auth, _value, this.options)
         return _value
       }
 
@@ -237,6 +271,14 @@ export class Tresor {
 
   async clear(): Promise<void> {
     await this.options.resolver.clear()
+  }
+
+  async invalidate(path: string, auth: string | null) {
+    await this.options.resolver.removeItem({
+      path,
+      auth,
+      options: this.options
+    })
   }
 }
 

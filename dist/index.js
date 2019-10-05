@@ -83,7 +83,7 @@ class Tresor {
             maxAge: 60000,
             auth: () => null,
             manualResponse: false,
-            resType: "json",
+            responseType: "json",
             shouldCache: () => true,
             resolver: new memory_1.MemoryResolver()
         };
@@ -100,9 +100,9 @@ class Tresor {
         }
     }
     sendCached(res, value) {
-        if (this.options.resType === "json")
+        if (this.options.responseType === "json")
             res.json(JSON.parse(value));
-        else if (this.options.resType === "html")
+        else if (this.options.responseType === "html")
             res.send(value);
     }
     init() {

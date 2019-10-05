@@ -35,7 +35,7 @@ export interface ITresorOptions {
     resolver: BaseResolver;
     auth: AuthFunction;
     manualResponse: boolean;
-    resType: "json" | "html";
+    responseType: "json" | "html";
     shouldCache: (req: express.Request, res: express.Response) => boolean;
     onCacheHit?: (path: string, time: number) => void;
     onCacheMiss?: (path: string, time: number) => void;

@@ -41,7 +41,7 @@ class FileResolver extends index_1.BaseResolver {
     getFile(path, auth, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(path, auth, options.resType);
+                const filePath = this.filePath(path, auth, options.responseType);
                 if (yield promiseExist(filePath))
                     return yield promiseRead(filePath, "utf-8");
                 return null;
@@ -54,7 +54,7 @@ class FileResolver extends index_1.BaseResolver {
     store(context, value) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(context.path, context.auth, context.options.resType);
+                const filePath = this.filePath(context.path, context.auth, context.options.responseType);
                 yield promiseWrite(filePath, value);
                 this.files.push(filePath);
             }
@@ -72,7 +72,7 @@ class FileResolver extends index_1.BaseResolver {
     remove(context) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(context.path, context.auth, context.options.resType);
+                const filePath = this.filePath(context.path, context.auth, context.options.responseType);
                 if (yield promiseExist(filePath)) {
                     yield promiseUnlink(filePath);
                     this.files = this.files.filter(item => item != filePath);

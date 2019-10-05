@@ -8,13 +8,13 @@ async function fromDatabase(): Promise<object> {
 }
 
 const fsCache = new Tresor({
-  maxAge: 5000,
+  maxAge: "5s",
   resolver: new FileResolver(),
   onCacheHit: (path: string, time: number) => console.log(`Cache hit ${path} ${time}ms`),
   onCacheMiss: (path: string, time: number) => console.log(`Cache miss ${path} ${time}ms`),
 })
 
-app.get("/slow-renderer",
+app.get("/slow-db",
   fsCache.init(),
   async (req: express.Request, res: express.Response) => {
     res.$tresor.send(await fromDatabase());
@@ -22,8 +22,8 @@ app.get("/slow-renderer",
 )
 
 const htmlCache = new Tresor({
-  resType: "html",
-  maxAge: 300000,
+  responseType: "html",
+  maxAge: "5 mins",
   maxAmount: 5,
   onCacheMiss: () => console.log(`Slow render without cache`),
   onCacheHit: (path: string, time: number) => console.log(`Supercharged render using cache: ${time}ms`),

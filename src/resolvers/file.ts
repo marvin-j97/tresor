@@ -46,7 +46,7 @@ export class FileResolver extends BaseResolver {
 
   async store(context: IResolverContext, value: string) {
     try {
-      const filePath = this.filePath(context.path, context.auth, context.options.resType)
+      const filePath = this.filePath(context.path, context.auth, context.options.responseType)
       await promiseWrite(filePath, value)
       this.files.push(filePath)
     }
@@ -56,13 +56,13 @@ export class FileResolver extends BaseResolver {
   }
 
   async retrieve(context: IResolverContext) {
-    const content = await this.getFile(context.path, context.auth, context.options.resType)
+    const content = await this.getFile(context.path, context.auth, context.options.responseType)
     return content
   }
 
   async remove(context: IResolverContext) {
     try {
-      const filePath = this.filePath(context.path, context.auth, context.options.resType)
+      const filePath = this.filePath(context.path, context.auth, context.options.responseType)
       if (await promiseExist(filePath)) {
         await promiseUnlink(filePath)
 

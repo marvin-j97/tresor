@@ -3,6 +3,7 @@ import 'mocha'
 import chaiHttp from "chai-http"
 import { Tresor, FileResolver } from "../src/index"
 import app from "./app";
+import { parseDuration } from "../src/time_extractor"
 
 chai.use(chaiHttp)
 
@@ -12,25 +13,57 @@ describe('server', () => {
   });
 })
 
+describe("Parse duration", () => {
+  const tests = [
+    ["1 ms", 1],
+    ["1 sec", 1000],
+    ["1 s", 1000],
+    ["1s", 1000],
+    ["5 secs", 5000],
+    ["1mins", 60000],
+    ["1 min", 60000],
+    ["10 min", 600000],
+    ["1.5mins", 90000],
+    ["1.5 s", 1500],
+    ["1 hour", 3600000],
+    ["1.5hours", 5400000],
+    ["1 day", 86400000],
+    ["10days", 864000000],
+
+    [47, 47],
+    ["3 ms", 3],
+    ["3 seconds", 3000],
+    ["4 minutes", 1000 * 60 * 4],
+    ["2 hours", 1000 * 60 * 60 * 2],
+    ["3 days", 1000 * 60 * 60 * 24 * 3]
+  ] as [string, number][]
+
+  for (const test of tests) {
+    it(`Should equal ${test[1]}`, () => {
+      expect(parseDuration(test[0])).to.equal(test[1])
+    })
+  }
+})
+
 describe('Options', () => {
   it('Options override', async () => {
     const maxAge = 60000
     const maxAmount = 500
     const manualResponse = true
-    const resType = "json"
+    const responseType = "json"
 
     const cache = new Tresor({
       maxAge,
       maxAmount,
       manualResponse,
       resolver: null as any,
-      resType
+      responseType
     })
 
     expect(cache.options.maxAge).to.equal(maxAge)
     expect(cache.options.maxAmount).to.equal(maxAmount)
     expect(cache.options.manualResponse).to.equal(manualResponse)
-    expect(cache.options.resType).to.equal(resType)
+    expect(cache.options.responseType).to.equal(responseType)
   })
 })
 
