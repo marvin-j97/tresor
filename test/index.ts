@@ -1,8 +1,8 @@
 import chai, { expect } from 'chai'
 import 'mocha'
 import chaiHttp from "chai-http"
-import { Tresor, FileResolver } from "../src/index"
-import app from "./app";
+import { Tresor } from "../src/index"
+import app, { limiter100 } from "./app";
 import { parseDuration } from "../src/time_extractor"
 
 chai.use(chaiHttp)
@@ -204,5 +204,18 @@ describe('File Cache', () => {
 
     expect(res.body).to.deep.equal({ hello: "world" });
     expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
+  })
+})
+
+describe("Limit test", () => {
+  it("Should never go above 100 items", async function () {
+    this.timeout(5000);
+
+    for (let i = 0; i < 1000; i++) {
+      await chai.request(app)
+        .get(`/limit100?q=${i}`);
+
+      expect(limiter100.options.resolver.size()).to.be.lessThan(101)
+    }
   })
 })

@@ -42,4 +42,16 @@ app.get("/file/slow-json",
   }
 )
 
+const limiter100 = Tresor.html({
+  maxAge: "24 hours"
+});
+export { limiter100 };
+
+app.get("/limit100",
+  limiter100.init(),
+  async (req, res) => {
+    res.$tresor.send("This route is limited to 100 cached items that last 24 hours each")
+  }
+)
+
 export default app;

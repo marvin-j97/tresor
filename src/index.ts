@@ -63,6 +63,8 @@ export interface ITresorOptions {
   responseType: "json" | "html"
   // Whether content should be cached at all (default = () => true)
   shouldCache: (req: express.Request, res: express.Response) => boolean
+  // Cache store hook (default = undefined)
+  onStore?: (path: string, amount: number) => void
   // Cache Hit hook (default = undefined)
   onCacheHit?: (path: string, time: number) => void
   // Cache Miss hook (default = undefined)
@@ -75,6 +77,10 @@ export interface ITresorOptions {
 // Public methods should not be called by the deriving resolvers
 export abstract class BaseResolver {
   protected items = [] as CacheItem[]
+
+  public size() {
+    return this.items.length
+  }
 
   private amount() {
     return this.items.length
@@ -91,6 +97,9 @@ export abstract class BaseResolver {
       auth: context.auth,
       storedOn: +new Date
     })
+
+    if (context.options.onStore)
+      context.options.onStore(context.path, this.items.length)
   }
 
   public async removeItem(context: IResolverContext) {
