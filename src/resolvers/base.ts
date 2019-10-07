@@ -9,7 +9,7 @@ export abstract class BaseResolver {
     return this.items.length;
   }
 
-  private getItem(path: string, auth: string | null, options: ITresorOptions) {
+  private getItem({ path, auth, options }: IResolverContext) {
     return this.items.find(item => item.path == path && item.auth == auth);
   }
 
@@ -32,12 +32,12 @@ export abstract class BaseResolver {
     );
   }
 
-  public async checkCache(
-    path: string,
-    auth: string | null,
-    options: ITresorOptions
-  ): Promise<string | null> {
-    const item = this.getItem(path, auth, options);
+  public async checkCache({
+    path,
+    auth,
+    options
+  }: IResolverContext): Promise<string | null> {
+    const item = this.getItem({ path, auth, options });
 
     if (item) {
       // minAmount will ignore cache age as long as there are less items in cache than minAmount
@@ -65,12 +65,10 @@ export abstract class BaseResolver {
   }
 
   public async addToCache(
-    path: string,
-    auth: string | null,
-    value: string,
-    options: ITresorOptions
+    { path, auth, options }: IResolverContext,
+    value: string
   ) {
-    const item = this.getItem(path, auth, options);
+    const item = this.getItem({ path, auth, options });
 
     if (!item) {
       if (this.size() == options.maxSize) {

@@ -76,11 +76,11 @@ export class Tresor {
     ) => {
       const beforeCache = +new Date();
       const auth = this.options.auth(req, res);
-      const cached = await this.resolver().checkCache(
-        req.originalUrl,
+      const cached = await this.resolver().checkCache({
+        path: req.originalUrl,
         auth,
-        this.options
-      );
+        options: this.options
+      });
 
       if (cached != null) {
         if (this.options.onCacheHit)
@@ -113,10 +113,8 @@ export class Tresor {
 
         if (this.options.shouldCache(req, res))
           await this.resolver().addToCache(
-            req.originalUrl,
-            auth,
-            _value,
-            this.options
+            { path: req.originalUrl, auth, options: this.options },
+            _value
           );
         return _value;
       };
