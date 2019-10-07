@@ -1,17 +1,17 @@
-import chai, { expect } from 'chai'
-import 'mocha'
-import chaiHttp from "chai-http"
-import { Tresor } from "../src/index"
+import chai, { expect } from "chai";
+import "mocha";
+import chaiHttp from "chai-http";
+import { Tresor } from "../src/index";
 import app, { limiter100 } from "./app";
-import { parseDuration } from "../src/time_extractor"
+import { parseDuration } from "../src/time_extractor";
 
-chai.use(chaiHttp)
+chai.use(chaiHttp);
 
-describe('server', () => {
-  before(function () {
+describe("server", () => {
+  before(function() {
     app.listen(7777);
   });
-})
+});
 
 describe("Parse duration", () => {
   const tests = [
@@ -36,44 +36,43 @@ describe("Parse duration", () => {
     ["4 minutes", 1000 * 60 * 4],
     ["2 hours", 1000 * 60 * 60 * 2],
     ["3 days", 1000 * 60 * 60 * 24 * 3]
-  ] as [string, number][]
+  ] as [string, number][];
 
   for (const test of tests) {
     it(`Should equal ${test[1]}`, () => {
-      expect(parseDuration(test[0])).to.equal(test[1])
-    })
+      expect(parseDuration(test[0])).to.equal(test[1]);
+    });
   }
-})
+});
 
-describe('Options', () => {
-  it('Options override', async () => {
-    const maxAge = 60000
-    const maxAmount = 500
-    const manualResponse = true
-    const responseType = "json"
+describe("Options", () => {
+  it("Options override", async () => {
+    const maxAge = 60000;
+    const maxSize = 500;
+    const manualResponse = true;
+    const responseType = "json";
 
     const cache = new Tresor({
       maxAge,
-      maxAmount,
+      maxSize,
       manualResponse,
       resolver: null as any,
       responseType
-    })
+    });
 
-    expect(cache.options.maxAge).to.equal(maxAge)
-    expect(cache.options.maxAmount).to.equal(maxAmount)
-    expect(cache.options.manualResponse).to.equal(manualResponse)
-    expect(cache.options.responseType).to.equal(responseType)
-  })
-})
+    expect(cache.options.maxAge).to.equal(maxAge);
+    expect(cache.options.maxSize).to.equal(maxSize);
+    expect(cache.options.manualResponse).to.equal(manualResponse);
+    expect(cache.options.responseType).to.equal(responseType);
+  });
+});
 
-describe('In-Memory Cache', () => {
-  it('Basic HTML cache', async function () {
+describe("In-Memory Cache", () => {
+  it("Basic HTML cache", async function() {
     this.timeout(5000);
 
     let before = +new Date();
-    let res = await chai.request(app)
-      .get('/memory/slow-html');
+    let res = await chai.request(app).get("/memory/slow-html");
     let after = +new Date();
 
     expect(res.text).to.equal("Hello world!");
@@ -82,8 +81,7 @@ describe('In-Memory Cache', () => {
     // Trigger cached response 50 times
     for (let i = 0; i < 50; i++) {
       before = +new Date();
-      res = await chai.request(app)
-        .get('/memory/slow-html');
+      res = await chai.request(app).get("/memory/slow-html");
       after = +new Date();
 
       expect(res.text).to.equal("Hello world!");
@@ -94,20 +92,18 @@ describe('In-Memory Cache', () => {
     await new Promise(r => setTimeout(() => r(), 600));
 
     before = +new Date();
-    res = await chai.request(app)
-      .get('/memory/slow-html');
+    res = await chai.request(app).get("/memory/slow-html");
     after = +new Date();
 
     expect(res.text).to.equal("Hello world!");
     expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
-  })
+  });
 
-  it('Basic JSON cache', async function () {
+  it("Basic JSON cache", async function() {
     this.timeout(5000);
 
     let before = +new Date();
-    let res = await chai.request(app)
-      .get('/memory/slow-json');
+    let res = await chai.request(app).get("/memory/slow-json");
     let after = +new Date();
 
     expect(res.body).to.deep.equal({ hello: "world" });
@@ -116,8 +112,7 @@ describe('In-Memory Cache', () => {
     // Trigger cached response 50 times
     for (let i = 0; i < 50; i++) {
       before = +new Date();
-      res = await chai.request(app)
-        .get('/memory/slow-json');
+      res = await chai.request(app).get("/memory/slow-json");
       after = +new Date();
 
       expect(res.body).to.deep.equal({ hello: "world" });
@@ -128,22 +123,20 @@ describe('In-Memory Cache', () => {
     await new Promise(r => setTimeout(() => r(), 600));
 
     before = +new Date();
-    res = await chai.request(app)
-      .get('/memory/slow-json');
+    res = await chai.request(app).get("/memory/slow-json");
     after = +new Date();
 
     expect(res.body).to.deep.equal({ hello: "world" });
     expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
-  })
-})
+  });
+});
 
-describe('File Cache', () => {
-  it('Basic HTML cache', async function () {
+describe("File Cache", () => {
+  it("Basic HTML cache", async function() {
     this.timeout(5000);
 
     let before = +new Date();
-    let res = await chai.request(app)
-      .get('/file/slow-html');
+    let res = await chai.request(app).get("/file/slow-html");
     let after = +new Date();
 
     expect(res.text).to.equal("Hello world!");
@@ -152,8 +145,7 @@ describe('File Cache', () => {
     // Trigger cached response 50 times
     for (let i = 0; i < 50; i++) {
       before = +new Date();
-      res = await chai.request(app)
-        .get('/file/slow-html');
+      res = await chai.request(app).get("/file/slow-html");
       after = +new Date();
 
       expect(res.text).to.equal("Hello world!");
@@ -164,20 +156,18 @@ describe('File Cache', () => {
     await new Promise(r => setTimeout(() => r(), 600));
 
     before = +new Date();
-    res = await chai.request(app)
-      .get('/file/slow-html');
+    res = await chai.request(app).get("/file/slow-html");
     after = +new Date();
 
     expect(res.text).to.equal("Hello world!");
     expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
-  })
+  });
 
-  it('Basic JSON cache', async function () {
+  it("Basic JSON cache", async function() {
     this.timeout(5000);
 
     let before = +new Date();
-    let res = await chai.request(app)
-      .get('/file/slow-json');
+    let res = await chai.request(app).get("/file/slow-json");
     let after = +new Date();
 
     expect(res.body).to.deep.equal({ hello: "world" });
@@ -186,8 +176,7 @@ describe('File Cache', () => {
     // Trigger cached response 50 times
     for (let i = 0; i < 50; i++) {
       before = +new Date();
-      res = await chai.request(app)
-        .get('/file/slow-json');
+      res = await chai.request(app).get("/file/slow-json");
       after = +new Date();
 
       expect(res.body).to.deep.equal({ hello: "world" });
@@ -198,24 +187,22 @@ describe('File Cache', () => {
     await new Promise(r => setTimeout(() => r(), 600));
 
     before = +new Date();
-    res = await chai.request(app)
-      .get('/file/slow-json');
+    res = await chai.request(app).get("/file/slow-json");
     after = +new Date();
 
     expect(res.body).to.deep.equal({ hello: "world" });
     expect(after - before).to.be.greaterThan(400); // Rendered page: should take 500 ms
-  })
-})
+  });
+});
 
 describe("Limit test", () => {
-  it("Should never go above 100 items", async function () {
+  it("Should never go above 100 items", async function() {
     this.timeout(5000);
 
     for (let i = 0; i < 1000; i++) {
-      await chai.request(app)
-        .get(`/limit100?q=${i}`);
+      await chai.request(app).get(`/limit100?q=${i}`);
 
-      expect(limiter100.options.resolver.size()).to.be.lessThan(101)
+      expect(limiter100.options.resolver.size()).to.be.lessThan(101);
     }
-  })
-})
+  });
+});

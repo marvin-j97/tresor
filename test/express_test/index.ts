@@ -1,7 +1,7 @@
-import express from "express"
-import { Tresor, FileResolver } from "../../src/index"
+import express from "express";
+import { Tresor, FileResolver } from "../../src/index";
 
-const app = express()
+const app = express();
 
 async function fromDatabase(): Promise<object> {
   return new Promise(r => setTimeout(() => r({ hello: "world" }), 2500));
@@ -10,35 +10,40 @@ async function fromDatabase(): Promise<object> {
 const fsCache = new Tresor({
   maxAge: "5s",
   resolver: new FileResolver(),
-  onCacheHit: (path: string, time: number) => console.log(`Cache hit ${path} ${time}ms`),
-  onCacheMiss: (path: string, time: number) => console.log(`Cache miss ${path} ${time}ms`),
-})
+  onCacheHit: (path: string, time: number) =>
+    console.log(`Cache hit ${path} ${time}ms`),
+  onCacheMiss: (path: string, time: number) =>
+    console.log(`Cache miss ${path} ${time}ms`)
+});
 
-app.get("/slow-db",
+app.get(
+  "/slow-db",
   fsCache.init(),
   async (req: express.Request, res: express.Response) => {
     res.$tresor.send(await fromDatabase());
   }
-)
+);
 
 const htmlCache = new Tresor({
   responseType: "html",
   maxAge: "5 mins",
-  maxAmount: 5,
+  maxSize: 5,
   onCacheMiss: () => console.log(`Slow render without cache`),
-  onCacheHit: (path: string, time: number) => console.log(`Supercharged render using cache: ${time}ms`),
+  onCacheHit: (path: string, time: number) =>
+    console.log(`Supercharged render using cache: ${time}ms`),
   onCacheFull: () => console.log("Cache full!")
-})
+});
 
-app.get("/query",
+app.get(
+  "/query",
   htmlCache.init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       res.$tresor.send(`Hello ${req.query.name}!`);
-    }, 2500)
+    }, 2500);
   }
-)
+);
 
 app.listen(7777, () => {
-  console.log("Express on port 7777")
-})
+  console.log("Express on port 7777");
+});
