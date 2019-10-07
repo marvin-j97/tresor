@@ -1,4 +1,5 @@
-import { BaseResolver, IResolverContext } from "../index";
+import { BaseResolver } from "./base";
+import { IResolverContext } from "../types";
 import md5 from "md5";
 
 // Resolver using in-memory cache (default)

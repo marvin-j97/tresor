@@ -1,14 +1,15 @@
-import { BaseResolver, ITresorOptions, IResolverContext } from "../index";
+import { BaseResolver } from "./base";
+import { IResolverContext } from "../types";
 import md5 from "md5";
 import nodePath from "path";
 import { promisify } from "util";
-import { exists, readFile, writeFile, unlink } from "fs";
+import { exists, readFile, writeFile, unlink, mkdir } from "fs";
 
 const promiseExist = promisify(exists);
 const promiseRead = promisify(readFile);
 const promiseWrite = promisify(writeFile);
 const promiseUnlink = promisify(unlink);
-const mkdirp = require("mkdirp");
+const promiseMkdir = promisify(mkdir);
 
 // Resolver using the file system
 // Base path can be changed on constructoring, and default to ./tresor_cache
@@ -21,7 +22,7 @@ export class FileResolver extends BaseResolver {
     super();
     this.basePath = basePath || "./tresor_cache";
     const folder = nodePath.join(process.cwd(), this.basePath);
-    mkdirp(nodePath.relative(process.cwd(), folder), (err: any) => {});
+    promiseMkdir(nodePath.relative(process.cwd(), folder), { recursive: true });
   }
 
   private filePath(path: string, auth: string | null, ext: "json" | "html") {

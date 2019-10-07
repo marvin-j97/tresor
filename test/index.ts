@@ -202,7 +202,7 @@ describe("Limit test", () => {
     for (let i = 0; i < 1000; i++) {
       await chai.request(app).get(`/limit100?q=${i}`);
 
-      expect(limiter100.options.resolver.size()).to.be.lessThan(101);
+      expect(limiter100.resolver().size()).to.be.lessThan(101);
     }
   });
 });
