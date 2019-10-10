@@ -6,6 +6,7 @@ enum TimeUnit {
   day = "day"
 }
 
+// Milliseconds per 1 unit
 const timeValues: { [key in TimeUnit]: number } = {
   ms: 1,
   sec: 1000,
@@ -14,6 +15,7 @@ const timeValues: { [key in TimeUnit]: number } = {
   day: 24 * 60 * 60 * 1000
 };
 
+// Alias names
 const timeAliases: { [alias: string]: TimeUnit } = {
   ms: TimeUnit.ms,
   milli: TimeUnit.ms,
@@ -43,7 +45,6 @@ const timeAliases: { [alias: string]: TimeUnit } = {
 
 const keys = Object.keys(timeAliases);
 const keyRegexFragment = `(${keys.join("|")})`;
-
 const timeRegex = new RegExp(`^(\\d+(\\.\\d+)?)\\s*${keyRegexFragment}$`, "i");
 
 // Returns duration in milliseconds

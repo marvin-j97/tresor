@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("../index");
+const base_1 = require("./base");
 const md5_1 = __importDefault(require("md5"));
 const path_1 = __importDefault(require("path"));
 const util_1 = require("util");
@@ -21,16 +21,14 @@ const promiseExist = util_1.promisify(fs_1.exists);
 const promiseRead = util_1.promisify(fs_1.readFile);
 const promiseWrite = util_1.promisify(fs_1.writeFile);
 const promiseUnlink = util_1.promisify(fs_1.unlink);
-var mkdirp = require('mkdirp');
-class FileResolver extends index_1.BaseResolver {
+const promiseMkdir = util_1.promisify(fs_1.mkdir);
+class FileAdapter extends base_1.BaseAdapter {
     constructor(basePath) {
         super();
         this.files = [];
         this.basePath = basePath || "./tresor_cache";
         const folder = path_1.default.join(process.cwd(), this.basePath);
-        (() => __awaiter(this, void 0, void 0, function* () {
-            mkdirp(path_1.default.relative(process.cwd(), folder), (err) => { });
-        }))();
+        promiseMkdir(path_1.default.relative(process.cwd(), folder), { recursive: true });
     }
     filePath(path, auth, ext) {
         const hash = md5_1.default(path + auth);
@@ -38,10 +36,10 @@ class FileResolver extends index_1.BaseResolver {
         const filePath = path_1.default.join(folder, hash + "." + ext);
         return filePath;
     }
-    getFile(path, auth, options) {
+    getFile(path, auth, ext) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(path, auth, options.responseType);
+                const filePath = this.filePath(path, auth, ext);
                 if (yield promiseExist(filePath))
                     return yield promiseRead(filePath, "utf-8");
                 return null;
@@ -65,7 +63,7 @@ class FileResolver extends index_1.BaseResolver {
     }
     retrieve(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            const content = yield this.getFile(context.path, context.auth, context.options);
+            const content = yield this.getFile(context.path, context.auth, context.options.responseType);
             return content;
         });
     }
@@ -95,4 +93,4 @@ class FileResolver extends index_1.BaseResolver {
         });
     }
 }
-exports.FileResolver = FileResolver;
+exports.FileAdapter = FileAdapter;

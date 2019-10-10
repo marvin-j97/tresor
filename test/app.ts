@@ -1,5 +1,5 @@
 import express from "express";
-import { Tresor, FileResolver } from "../src/index";
+import { Tresor, FileAdapter } from "../src/index";
 
 const app = express();
 
@@ -37,7 +37,7 @@ app.get(
   "/file/slow-json",
   new Tresor({
     maxAge: "500ms",
-    resolver: new FileResolver("test/cache")
+    adapter: new FileAdapter("test/cache")
   }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {

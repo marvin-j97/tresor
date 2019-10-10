@@ -56,7 +56,7 @@ describe("Options", () => {
       maxAge,
       maxSize,
       manualResponse,
-      resolver: null as any,
+      adapter: null as any,
       responseType
     });
 
@@ -202,7 +202,7 @@ describe("Limit test", () => {
     for (let i = 0; i < 1000; i++) {
       await chai.request(app).get(`/limit100?q=${i}`);
 
-      expect(limiter100.resolver().size()).to.be.lessThan(101);
+      expect(limiter100.adapter().size()).to.be.lessThan(101);
     }
   });
 });

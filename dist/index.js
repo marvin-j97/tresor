@@ -9,95 +9,43 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-class BaseResolver {
-    constructor() {
-        this.items = [];
-    }
-    amount() {
-        return this.items.length;
-    }
-    getItem(path, auth, options) {
-        return this.items.find(item => item.path == path && item.auth == auth);
-    }
-    storeItem(context, value) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.store(context, value);
-            this.items.push({
-                path: context.path,
-                auth: context.auth,
-                storedOn: +new Date
-            });
-        });
-    }
-    removeItem(context) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.remove(context);
-            this.items = this.items.filter(item => !(item.path == context.path && item.auth == context.auth));
-        });
-    }
-    checkCache(path, auth, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const item = this.getItem(path, auth, options);
-            if (item) {
-                if (item.storedOn < (new Date().valueOf() - options.maxAge) && this.amount() > options.minAmount) {
-                    this.removeItem({ path, auth, options });
-                    return null;
-                }
-                else {
-                    const cached = yield this.retrieve({ path, auth, options });
-                    return cached;
-                }
-            }
-            else {
-                return null;
-            }
-        });
-    }
-    tryCache(path, auth, value, options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const item = this.getItem(path, auth, options);
-            if (!item) {
-                if (this.amount() == options.maxAmount) {
-                    const oldest = this.items.shift();
-                    yield this.removeItem({ path: oldest.path, auth: oldest.auth, options });
-                    if (options.onCacheFull)
-                        options.onCacheFull();
-                }
-                yield this.storeItem({ path, auth, options }, value);
-            }
-        });
-    }
-    clear() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.clearSelf();
-            this.items = [];
-        });
-    }
-}
-exports.BaseResolver = BaseResolver;
+const time_extractor_1 = require("./time_extractor");
 class Tresor {
     constructor(options) {
         const _default = {
-            minAmount: 0,
-            maxAmount: 100,
-            maxAge: 60000,
+            minSize: 0,
+            maxSize: 100,
+            maxAge: time_extractor_1.parseDuration("5 min"),
             auth: () => null,
             manualResponse: false,
             responseType: "json",
             shouldCache: () => true,
-            resolver: new memory_1.MemoryResolver()
+            adapter: new memory_1.MemoryAdapter()
         };
-        Object.assign(_default, options);
+        if (options)
+            Object.assign(_default, options);
         this.options = _default;
-        if (this.options.minAmount >= this.options.maxAmount) {
+        this.options.maxAge = time_extractor_1.parseDuration(this.options.maxAge);
+        if (this.options.minSize >= this.options.maxSize) {
             throw "TRESOR: minAmount cannot be greater or equal than maxAmount";
         }
-        if (this.options.maxAmount < 1) {
+        if (this.options.maxSize < 1) {
             throw "TRESOR: maxAmount needs to be 1 or higher";
         }
         if (this.options.maxAge < 1) {
             throw "TRESOR: maxAge needs to be 1 or higher";
         }
+    }
+    adapter() {
+        return this.options.adapter;
+    }
+    static html(options) {
+        let _options = Object.assign(Object.assign({}, options), { responseType: "html" });
+        return new Tresor(_options);
+    }
+    static json(options) {
+        let _options = Object.assign(Object.assign({}, options), { responseType: "json" });
+        return new Tresor(_options);
     }
     sendCached(res, value) {
         if (this.options.responseType === "json")
@@ -112,7 +60,11 @@ class Tresor {
         return (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             const beforeCache = +new Date();
             const auth = this.options.auth(req, res);
-            const cached = yield this.options.resolver.checkCache(req.originalUrl, auth, this.options);
+            const cached = yield this.adapter().checkCache({
+                path: req.originalUrl,
+                auth,
+                options: this.options
+            });
             if (cached != null) {
                 if (this.options.onCacheHit)
                     this.options.onCacheHit(req.originalUrl, new Date().valueOf() - beforeCache);
@@ -129,33 +81,43 @@ class Tresor {
                 if (this.options.onCacheMiss)
                     this.options.onCacheMiss(req.originalUrl, new Date().valueOf() - beforeCache);
             }
-            const cacheFun = (value) => __awaiter(this, void 0, void 0, function* () {
-                let _value = value;
-                if (typeof value == "object")
-                    _value = JSON.stringify(value);
-                if (this.options.shouldCache(req, res))
-                    yield this.options.resolver.tryCache(req.originalUrl, auth, _value, this.options);
-                return _value;
-            });
             res.$tresor = {
                 send: (value) => __awaiter(this, void 0, void 0, function* () {
                     const _value = yield res.$tresor.cache(value);
                     this.sendCached(res, _value);
                     return _value;
                 }),
-                cache: cacheFun
+                cache: (value) => __awaiter(this, void 0, void 0, function* () {
+                    let _value = value;
+                    if (typeof value == "object")
+                        _value = JSON.stringify(value);
+                    if (this.options.shouldCache(req, res))
+                        yield this.adapter().addToCache({ path: req.originalUrl, auth, options: this.options }, _value);
+                    return _value;
+                })
             };
             next();
         });
     }
     clear() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.options.resolver.clear();
+            yield this.adapter().clear();
+        });
+    }
+    invalidate(path, auth) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.adapter().removeItem({
+                path,
+                auth,
+                options: this.options
+            });
         });
     }
 }
 exports.Tresor = Tresor;
-const memory_1 = require("./resolvers/memory");
-exports.MemoryResolver = memory_1.MemoryResolver;
-const file_1 = require("./resolvers/file");
-exports.FileResolver = file_1.FileResolver;
+const memory_1 = require("./adapters/memory");
+exports.MemoryAdapter = memory_1.MemoryAdapter;
+const file_1 = require("./adapters/file");
+exports.FileAdapter = file_1.FileAdapter;
+const base_1 = require("./adapters/base");
+exports.BaseAdapter = base_1.BaseAdapter;

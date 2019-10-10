@@ -1,6 +1,6 @@
 import express from "express";
 import { Tresor } from "./index";
-import { BaseResolver } from "./resolvers/base";
+import { BaseAdapter } from "./adapters/base";
 
 // Injected cached content in request
 // (only relevant when using manualResponse)
@@ -10,8 +10,8 @@ export interface ITresorInject {
   instance: Tresor;
 }
 
-// Context given to the resolver operations
-export interface IResolverContext {
+// Context given to the adapter operations
+export interface IAdapterContext {
   path: string;
   auth: string | null;
   options: ITresorOptions;
@@ -40,7 +40,7 @@ export type AuthFunction = (
 ) => string | null;
 
 // Stored cache item metadata
-// Cached content location (like JSON or HTML) is resolver-specific
+// Cached content location (like JSON or HTML) is adapter-specific
 export type CacheItem = { path: string; auth: string | null; storedOn: number };
 
 // Constructor options
@@ -58,8 +58,8 @@ export interface ITresorOptions {
   maxSize: number;
   // Max age in ms (default = 60000 aka. 1 minute)
   maxAge: number | string;
-  // Resolver to use (default = MemoryResolver)
-  resolver: BaseResolver;
+  // Adapter to use (default = MemoryAdapter)
+  adapter: BaseAdapter;
   // Authentication cache items will be signed with (default = () => null), null = no authentication
   auth: AuthFunction;
   // If true, cached content is not automatically sent to client, but rather exposed in request (default = false)

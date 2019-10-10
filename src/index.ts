@@ -7,8 +7,8 @@ import { ITresorOptions } from "./types";
 export class Tresor {
   options: ITresorOptions;
 
-  resolver() {
-    return this.options.resolver;
+  adapter() {
+    return this.options.adapter;
   }
 
   static html(options?: Partial<Omit<ITresorOptions, "responseType">>) {
@@ -38,7 +38,7 @@ export class Tresor {
       manualResponse: false,
       responseType: "json",
       shouldCache: () => true,
-      resolver: new MemoryResolver()
+      adapter: new MemoryAdapter()
     };
 
     if (options) Object.assign(_default, options);
@@ -76,7 +76,7 @@ export class Tresor {
     ) => {
       const beforeCache = +new Date();
       const auth = this.options.auth(req, res);
-      const cached = await this.resolver().checkCache({
+      const cached = await this.adapter().checkCache({
         path: req.originalUrl,
         auth,
         options: this.options
@@ -106,26 +106,24 @@ export class Tresor {
           );
       }
 
-      const cacheFun = async (value: object | string) => {
-        let _value = value as string;
-
-        if (typeof value == "object") _value = JSON.stringify(value);
-
-        if (this.options.shouldCache(req, res))
-          await this.resolver().addToCache(
-            { path: req.originalUrl, auth, options: this.options },
-            _value
-          );
-        return _value;
-      };
-
       res.$tresor = {
         send: async (value: object | string) => {
           const _value = await res.$tresor.cache(value);
           this.sendCached(res, _value);
           return _value;
         },
-        cache: cacheFun
+        cache: async (value: object | string) => {
+          let _value = value as string;
+
+          if (typeof value == "object") _value = JSON.stringify(value);
+
+          if (this.options.shouldCache(req, res))
+            await this.adapter().addToCache(
+              { path: req.originalUrl, auth, options: this.options },
+              _value
+            );
+          return _value;
+        }
       };
 
       next();
@@ -133,11 +131,11 @@ export class Tresor {
   }
 
   async clear(): Promise<void> {
-    await this.resolver().clear();
+    await this.adapter().clear();
   }
 
   async invalidate(path: string, auth: string | null) {
-    await this.resolver().removeItem({
+    await this.adapter().removeItem({
       path,
       auth,
       options: this.options
@@ -145,10 +143,10 @@ export class Tresor {
   }
 }
 
-import { MemoryResolver } from "./resolvers/memory";
-export { MemoryResolver };
-import { FileResolver } from "./resolvers/file";
-export { FileResolver };
-import { BaseResolver } from "./resolvers/base";
-export { BaseResolver };
+import { MemoryAdapter } from "./adapters/memory";
+export { MemoryAdapter };
+import { FileAdapter } from "./adapters/file";
+export { FileAdapter };
+import { BaseAdapter } from "./adapters/base";
+export { BaseAdapter };
 export * from "./types";

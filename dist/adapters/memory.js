@@ -8,37 +8,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const index_1 = require("../index");
-class MemoryResolver extends index_1.BaseResolver {
+const base_1 = require("./base");
+const md5_1 = __importDefault(require("md5"));
+class MemoryAdapter extends base_1.BaseAdapter {
     constructor() {
         super(...arguments);
-        this.internalStore = [];
+        this.internalStore = {};
     }
     store(context, value) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.internalStore.push({
-                path: context.path,
-                auth: context.auth,
-                value
-            });
+            this.internalStore[md5_1.default(context.path + context.auth)] = value;
         });
     }
     retrieve(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            const item = this.internalStore.find(item => item.path == context.path && item.auth == context.auth);
-            return item ? item.value : null;
+            const value = this.internalStore[md5_1.default(context.path + context.auth)];
+            return value ? value : null;
         });
     }
     remove(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.internalStore = this.internalStore.filter(item => !(item.path == context.path && item.auth == context.auth));
+            delete this.internalStore[md5_1.default(context.path + context.auth)];
         });
     }
     clearSelf() {
         return __awaiter(this, void 0, void 0, function* () {
-            this.internalStore = [];
+            this.internalStore = {};
         });
     }
 }
-exports.MemoryResolver = MemoryResolver;
+exports.MemoryAdapter = MemoryAdapter;

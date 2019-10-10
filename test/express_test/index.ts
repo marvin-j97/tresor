@@ -1,5 +1,5 @@
 import express from "express";
-import { Tresor, FileResolver } from "../../src/index";
+import { Tresor, FileAdapter } from "../../src/index";
 
 const app = express();
 
@@ -9,7 +9,7 @@ async function fromDatabase(): Promise<object> {
 
 const fsCache = new Tresor({
   maxAge: "5s",
-  resolver: new FileResolver(),
+  adapter: new FileAdapter(),
   onCacheHit: (path: string, time: number) =>
     console.log(`Cache hit ${path} ${time}ms`),
   onCacheMiss: (path: string, time: number) =>

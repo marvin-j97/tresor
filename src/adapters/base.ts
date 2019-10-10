@@ -1,19 +1,19 @@
-import { CacheItem, IResolverContext, ITresorOptions } from "../types";
+import { CacheItem, IAdapterContext, ITresorOptions } from "../types";
 
-// Base class to create new Resolvers
-// Public methods should not be called by the deriving resolvers
-export abstract class BaseResolver {
+// Base class to create new Adapters
+// Public methods should not be called by the deriving Adapters
+export abstract class BaseAdapter {
   protected items = [] as CacheItem[];
 
   public size() {
     return this.items.length;
   }
 
-  private getItem({ path, auth, options }: IResolverContext) {
+  private getItem({ path, auth, options }: IAdapterContext) {
     return this.items.find(item => item.path == path && item.auth == auth);
   }
 
-  private async storeItem(context: IResolverContext, value: string) {
+  private async storeItem(context: IAdapterContext, value: string) {
     await this.store(context, value);
     this.items.push({
       path: context.path,
@@ -25,7 +25,7 @@ export abstract class BaseResolver {
       context.options.onStore(context.path, this.items.length);
   }
 
-  public async removeItem(context: IResolverContext) {
+  public async removeItem(context: IAdapterContext) {
     await this.remove(context);
     this.items = this.items.filter(
       item => !(item.path == context.path && item.auth == context.auth)
@@ -36,7 +36,7 @@ export abstract class BaseResolver {
     path,
     auth,
     options
-  }: IResolverContext): Promise<string | null> {
+  }: IAdapterContext): Promise<string | null> {
     const item = this.getItem({ path, auth, options });
 
     if (item) {
@@ -65,7 +65,7 @@ export abstract class BaseResolver {
   }
 
   public async addToCache(
-    { path, auth, options }: IResolverContext,
+    { path, auth, options }: IAdapterContext,
     value: string
   ) {
     const item = this.getItem({ path, auth, options });
@@ -89,12 +89,10 @@ export abstract class BaseResolver {
   }
 
   protected abstract store(
-    context: IResolverContext,
+    context: IAdapterContext,
     value: string
   ): Promise<void>;
-  protected abstract retrieve(
-    context: IResolverContext
-  ): Promise<string | null>;
-  protected abstract remove(context: IResolverContext): Promise<void>;
+  protected abstract retrieve(context: IAdapterContext): Promise<string | null>;
+  protected abstract remove(context: IAdapterContext): Promise<void>;
   protected abstract clearSelf(): Promise<void>;
 }

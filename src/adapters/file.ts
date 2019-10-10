@@ -1,5 +1,5 @@
-import { BaseResolver } from "./base";
-import { IResolverContext } from "../types";
+import { BaseAdapter } from "./base";
+import { IAdapterContext } from "../types";
 import md5 from "md5";
 import nodePath from "path";
 import { promisify } from "util";
@@ -11,10 +11,10 @@ const promiseWrite = promisify(writeFile);
 const promiseUnlink = promisify(unlink);
 const promiseMkdir = promisify(mkdir);
 
-// Resolver using the file system
+// Adapter using the file system
 // Base path can be changed on constructoring, and default to ./tresor_cache
 // File names are determined by hashing the http path + the authorization string using MD5
-export class FileResolver extends BaseResolver {
+export class FileAdapter extends BaseAdapter {
   private files = [] as string[];
   private basePath: string;
 
@@ -48,7 +48,7 @@ export class FileResolver extends BaseResolver {
     }
   }
 
-  async store(context: IResolverContext, value: string) {
+  async store(context: IAdapterContext, value: string) {
     try {
       const filePath = this.filePath(
         context.path,
@@ -62,7 +62,7 @@ export class FileResolver extends BaseResolver {
     }
   }
 
-  async retrieve(context: IResolverContext) {
+  async retrieve(context: IAdapterContext) {
     const content = await this.getFile(
       context.path,
       context.auth,
@@ -71,7 +71,7 @@ export class FileResolver extends BaseResolver {
     return content;
   }
 
-  async remove(context: IResolverContext) {
+  async remove(context: IAdapterContext) {
     try {
       const filePath = this.filePath(
         context.path,
