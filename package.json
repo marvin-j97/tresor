@@ -1,5 +1,5 @@
 {
-  "name": "tresor",
+  "name": "@dotvirus/tresor",
   "version": "0.1.0",
   "description": "Express server-side caching",
   "main": "dist/",
