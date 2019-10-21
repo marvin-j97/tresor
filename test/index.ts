@@ -86,7 +86,7 @@ describe("In-Memory Cache", () => {
       after = +new Date();
 
       expect(res.text).to.equal("Hello world!");
-      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
+      expect(after - before).to.be.lessThan(20); // Cached response, should be less than 10ms
     }
 
     // Wait for cache expiration
@@ -117,7 +117,7 @@ describe("In-Memory Cache", () => {
       after = +new Date();
 
       expect(res.body).to.deep.equal({ hello: "world" });
-      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
+      expect(after - before).to.be.lessThan(20); // Cached response, should be less than 10ms
     }
 
     // Wait for cache expiration
@@ -150,7 +150,7 @@ describe("File Cache", () => {
       after = +new Date();
 
       expect(res.text).to.equal("Hello world!");
-      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
+      expect(after - before).to.be.lessThan(20); // Cached response, should be less than 10ms
     }
 
     // Wait for cache expiration
@@ -181,7 +181,7 @@ describe("File Cache", () => {
       after = +new Date();
 
       expect(res.body).to.deep.equal({ hello: "world" });
-      expect(after - before).to.be.lessThan(10); // Cached response, should be less than 10ms
+      expect(after - before).to.be.lessThan(20); // Cached response, should be less than 10ms
     }
 
     // Wait for cache expiration

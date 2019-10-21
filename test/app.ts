@@ -25,7 +25,7 @@ app.get(
 
 app.get(
   "/file/slow-html",
-  Tresor.html({ maxAge: "500ms" }).init(),
+  Tresor.html({ maxAge: "500ms", adapter: new FileAdapter() }).init(),
   async (req: express.Request, res: express.Response) => {
     setTimeout(() => {
       res.$tresor.send("Hello world!");
