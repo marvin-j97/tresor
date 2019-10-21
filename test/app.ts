@@ -57,4 +57,15 @@ app.get("/limit100", limiter100.init(), async (req, res) => {
   );
 });
 
+const twentyfourhours = Tresor.html({
+  maxAge: "24h"
+});
+export { twentyfourhours };
+
+app.get("/24hours", twentyfourhours.init(), async (req, res) => {
+  res.$tresor.send(
+    "This route is limited to 100 cached items that last 24 hours each"
+  );
+});
+
 export default app;

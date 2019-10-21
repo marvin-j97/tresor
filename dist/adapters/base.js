@@ -16,7 +16,9 @@ const sha1_1 = __importDefault(require("sha1"));
 const time_extractor_1 = require("../time_extractor");
 class BaseAdapter {
     constructor() {
-        this.items = [];
+        this.items = {};
+        this.hashes = [];
+        this.numItems = 0;
         this.timers = {};
     }
     removeTimer(key) {
@@ -32,47 +34,47 @@ class BaseAdapter {
         return Object.keys(this.timers).map(this.getTimer);
     }
     size() {
-        return this.items.length;
+        return this.numItems;
     }
-    getItem({ path, auth }) {
-        return this.items.find(item => item.path == path && item.auth == auth);
+    getItem(key) {
+        return this.items[key];
     }
-    storeItem(context, value) {
+    storeItem(key, value, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.store(context, value);
-            this.items.push({
-                path: context.path,
-                auth: context.auth,
+            yield this.store(key, value, options);
+            this.items[key] = {
+                key: key,
                 storedOn: +new Date()
-            });
-            const hash = sha1_1.default(context.path + context.auth);
-            this.timers[hash] = setTimeout(() => {
-                this.removeItem(context);
-            }, typeof context.options.maxAge == "string"
-                ? time_extractor_1.parseDuration(context.options.maxAge)
-                : context.options.maxAge);
-            if (context.options.onStore)
-                context.options.onStore(context.path, this.items.length);
+            };
+            this.timers[key] = setTimeout(() => {
+                this.removeItem(key, options);
+            }, typeof options.maxAge == "string"
+                ? time_extractor_1.parseDuration(options.maxAge)
+                : options.maxAge);
+            this.numItems++;
+            this.hashes.push(key);
         });
     }
-    removeItem(context) {
+    removeItem(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.remove(context);
-            this.items = this.items.filter(item => !(item.path == context.path && item.auth == context.auth));
-            const hash = sha1_1.default(context.path + context.auth);
-            this.removeTimer(hash);
+            yield this.remove(key, options);
+            delete this.items[key];
+            this.hashes = this.hashes.filter(hash => hash != key);
+            this.removeTimer(key);
+            this.numItems--;
         });
     }
     checkCache({ path, auth, options }) {
         return __awaiter(this, void 0, void 0, function* () {
-            const item = this.getItem({ path, auth, options });
+            const hash = sha1_1.default(path + auth);
+            const item = this.getItem(hash);
             if (item) {
                 if (item.storedOn < new Date().valueOf() - options.maxAge) {
-                    this.removeItem({ path, auth, options });
+                    this.removeItem(hash, options);
                     return null;
                 }
                 else {
-                    const cached = yield this.retrieve({ path, auth, options });
+                    const cached = yield this.retrieve(hash, options);
                     return cached;
                 }
             }
@@ -81,31 +83,46 @@ class BaseAdapter {
             }
         });
     }
-    removeOldest(options) {
+    removeIndex(index, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const oldest = this.items.shift();
-            yield this.removeItem({ path: oldest.path, auth: oldest.auth, options });
+            const hash = this.hashes[index];
+            if (hash) {
+                yield this.removeItem(hash, options);
+            }
         });
     }
     addToCache({ path, auth, options }, value) {
         return __awaiter(this, void 0, void 0, function* () {
-            const item = this.getItem({ path, auth, options });
+            const hash = sha1_1.default(path + auth);
+            const item = this.getItem(hash);
             if (!item) {
                 if (this.size() == options.maxSize) {
-                    yield this.removeOldest(options);
+                    yield this.removeIndex(options.discardStrategy.choose(this.hashes.map(hash => this.items[hash]), options), options);
                     if (options.onCacheFull)
                         options.onCacheFull();
                 }
-                yield this.storeItem({ path, auth, options }, value);
+                yield this.storeItem(hash, value, options);
+                if (options.onStore)
+                    options.onStore(path, this.numItems);
             }
+        });
+    }
+    clearItem({ path, auth, options }) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.removeItem(sha1_1.default(path + auth), options);
         });
     }
     clear() {
         return __awaiter(this, void 0, void 0, function* () {
+            console.log("Clearing...");
             yield this.clearSelf();
+            console.log("Cleared self.");
+            console.log(this.getTimers());
             this.getTimers().forEach(timer => clearTimeout(timer));
             this.timers = {};
-            this.items = [];
+            this.items = {};
+            this.hashes = [];
+            this.numItems = 0;
         });
     }
 }

@@ -1,6 +1,12 @@
 import express from "express";
 import { parseDuration } from "./time_extractor";
 import { ITresorOptions } from "./types";
+import { MemoryAdapter } from "./adapters/memory";
+import { FileAdapter } from "./adapters/file";
+import { BaseAdapter } from "./adapters/base";
+import { IDiscardStrategy } from "./discard_strategies/index";
+import { FIFOStrategy } from "./discard_strategies/fifo";
+import { LIFOStrategy } from "./discard_strategies/lifo";
 
 // Tresor instance
 // Use .init() or .middleware() when adding to an Express route
@@ -37,7 +43,8 @@ export class Tresor {
       manualResponse: false,
       responseType: "json",
       shouldCache: () => true,
-      adapter: new MemoryAdapter()
+      adapter: new MemoryAdapter(),
+      discardStrategy: new FIFOStrategy()
     };
 
     if (options) Object.assign(_default, options);
@@ -130,7 +137,7 @@ export class Tresor {
   }
 
   async invalidate(path: string, auth: string | null) {
-    await this.adapter().removeItem({
+    await this.adapter().clearItem({
       path,
       auth,
       options: this.options
@@ -138,10 +145,12 @@ export class Tresor {
   }
 }
 
-import { MemoryAdapter } from "./adapters/memory";
 export { MemoryAdapter };
-import { FileAdapter } from "./adapters/file";
 export { FileAdapter };
-import { BaseAdapter } from "./adapters/base";
 export { BaseAdapter };
+
+export { IDiscardStrategy };
+export { FIFOStrategy };
+export { LIFOStrategy };
+
 export * from "./types";

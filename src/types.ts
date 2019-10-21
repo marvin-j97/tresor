@@ -1,6 +1,7 @@
 import express from "express";
 import { Tresor } from "./index";
 import { BaseAdapter } from "./adapters/base";
+import { IDiscardStrategy } from "./discard_strategies/index";
 
 export interface HashMap<T> {
   [key: string]: T;
@@ -45,12 +46,15 @@ export type AuthFunction = (
 
 // Stored cache item metadata
 // Cached content location (like JSON or HTML) is adapter-specific
-export type CacheItem = { path: string; auth: string | null; storedOn: number };
+export type CacheItem = {
+  key: string;
+  storedOn: number;
+};
 
 // Constructor options
 export interface ITresorOptions {
   // Discard strategy to use when adding an item to an already full cache (default = new FIFOStrategy())
-  // discardStrategy: DiscardStrategy;
+  discardStrategy: IDiscardStrategy;
   // Only allow limited amount of items (default = 100)
   maxSize: number;
   // Max age in ms (default = 300000 aka. 5 minutes)

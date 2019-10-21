@@ -2,7 +2,7 @@ import chai, { expect } from "chai";
 import "mocha";
 import chaiHttp from "chai-http";
 import { Tresor } from "../src/index";
-import app, { limiter100 } from "./app";
+import app, { limiter100, twentyfourhours } from "./app";
 import { parseDuration } from "../src/time_extractor";
 
 chai.use(chaiHttp);
@@ -209,5 +209,18 @@ describe("Limit test", () => {
     await new Promise(r => setTimeout(() => r(), 2000));
 
     expect(limiter100.adapter().size()).to.equal(0);
+  });
+});
+
+describe("Clear Tresor", () => {
+  it("Items should be empty after clearing", async function() {
+    this.timeout(5000);
+
+    for (let i = 0; i < 1000; i++) {
+      await chai.request(app).get(`/24hours?q=${i}`);
+    }
+    expect(twentyfourhours.adapter().size()).to.be.equal(100);
+    await twentyfourhours.clear();
+    expect(twentyfourhours.adapter().size()).to.equal(0);
   });
 });

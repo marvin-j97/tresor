@@ -1,6 +1,5 @@
 import { BaseAdapter } from "./base";
-import { IAdapterContext } from "../types";
-import sha1 from "sha1";
+import { ITresorOptions } from "../types";
 import nodePath from "path";
 import { promisify } from "util";
 import { exists, readFile, writeFile, unlink, mkdir } from "fs";
@@ -22,23 +21,23 @@ export class FileAdapter extends BaseAdapter {
     super();
     this.basePath = basePath || "./tresor_cache";
     const folder = nodePath.join(process.cwd(), this.basePath);
-    promiseMkdir(nodePath.relative(process.cwd(), folder), { recursive: true });
+    promiseMkdir(nodePath.relative(process.cwd(), folder), {
+      recursive: true
+    }).catch(err => {});
   }
 
-  private filePath(path: string, auth: string | null, ext: "json" | "html") {
-    const hash = sha1(path + auth);
+  private filePath(key: string, ext: "json" | "html") {
     const folder = nodePath.join(process.cwd(), this.basePath);
-    const filePath = nodePath.join(folder, hash + "." + ext);
+    const filePath = nodePath.join(folder, key + "." + ext);
     return filePath;
   }
 
   private async getFile(
-    path: string,
-    auth: string | null,
+    key: string,
     ext: "json" | "html"
   ): Promise<string | null> {
     try {
-      const filePath = this.filePath(path, auth, ext);
+      const filePath = this.filePath(key, ext);
 
       if (await promiseExist(filePath))
         return await promiseRead(filePath, "utf-8");
@@ -48,13 +47,9 @@ export class FileAdapter extends BaseAdapter {
     }
   }
 
-  async store(context: IAdapterContext, value: string) {
+  async store(key: string, value: string, options: ITresorOptions) {
     try {
-      const filePath = this.filePath(
-        context.path,
-        context.auth,
-        context.options.responseType
-      );
+      const filePath = this.filePath(key, options.responseType);
       await promiseWrite(filePath, value);
       this.files.push(filePath);
     } catch (err) {
@@ -62,22 +57,14 @@ export class FileAdapter extends BaseAdapter {
     }
   }
 
-  async retrieve(context: IAdapterContext) {
-    const content = await this.getFile(
-      context.path,
-      context.auth,
-      context.options.responseType
-    );
+  async retrieve(key: string, options: ITresorOptions) {
+    const content = await this.getFile(key, options.responseType);
     return content;
   }
 
-  async remove(context: IAdapterContext) {
+  async remove(key: string, options: ITresorOptions) {
     try {
-      const filePath = this.filePath(
-        context.path,
-        context.auth,
-        context.options.responseType
-      );
+      const filePath = this.filePath(key, options.responseType);
       if (await promiseExist(filePath)) {
         await promiseUnlink(filePath);
 

@@ -10,6 +10,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const time_extractor_1 = require("./time_extractor");
+const memory_1 = require("./adapters/memory");
+exports.MemoryAdapter = memory_1.MemoryAdapter;
+const file_1 = require("./adapters/file");
+exports.FileAdapter = file_1.FileAdapter;
+const base_1 = require("./adapters/base");
+exports.BaseAdapter = base_1.BaseAdapter;
+const fifo_1 = require("./discard_strategies/fifo");
+exports.FIFOStrategy = fifo_1.FIFOStrategy;
+const lifo_1 = require("./discard_strategies/lifo");
+exports.LIFOStrategy = lifo_1.LIFOStrategy;
 class Tresor {
     constructor(options) {
         const _default = {
@@ -19,7 +29,8 @@ class Tresor {
             manualResponse: false,
             responseType: "json",
             shouldCache: () => true,
-            adapter: new memory_1.MemoryAdapter()
+            adapter: new memory_1.MemoryAdapter(),
+            discardStrategy: new fifo_1.FIFOStrategy()
         };
         if (options)
             Object.assign(_default, options);
@@ -102,7 +113,7 @@ class Tresor {
     }
     invalidate(path, auth) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.adapter().removeItem({
+            yield this.adapter().clearItem({
                 path,
                 auth,
                 options: this.options
@@ -111,9 +122,3 @@ class Tresor {
     }
 }
 exports.Tresor = Tresor;
-const memory_1 = require("./adapters/memory");
-exports.MemoryAdapter = memory_1.MemoryAdapter;
-const file_1 = require("./adapters/file");
-exports.FileAdapter = file_1.FileAdapter;
-const base_1 = require("./adapters/base");
-exports.BaseAdapter = base_1.BaseAdapter;

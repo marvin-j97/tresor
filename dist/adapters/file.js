@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const base_1 = require("./base");
-const sha1_1 = __importDefault(require("sha1"));
 const path_1 = __importDefault(require("path"));
 const util_1 = require("util");
 const fs_1 = require("fs");
@@ -28,18 +27,19 @@ class FileAdapter extends base_1.BaseAdapter {
         this.files = [];
         this.basePath = basePath || "./tresor_cache";
         const folder = path_1.default.join(process.cwd(), this.basePath);
-        promiseMkdir(path_1.default.relative(process.cwd(), folder), { recursive: true });
+        promiseMkdir(path_1.default.relative(process.cwd(), folder), {
+            recursive: true
+        }).catch(err => { });
     }
-    filePath(path, auth, ext) {
-        const hash = sha1_1.default(path + auth);
+    filePath(key, ext) {
         const folder = path_1.default.join(process.cwd(), this.basePath);
-        const filePath = path_1.default.join(folder, hash + "." + ext);
+        const filePath = path_1.default.join(folder, key + "." + ext);
         return filePath;
     }
-    getFile(path, auth, ext) {
+    getFile(key, ext) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(path, auth, ext);
+                const filePath = this.filePath(key, ext);
                 if (yield promiseExist(filePath))
                     return yield promiseRead(filePath, "utf-8");
                 return null;
@@ -49,10 +49,10 @@ class FileAdapter extends base_1.BaseAdapter {
             }
         });
     }
-    store(context, value) {
+    store(key, value, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(context.path, context.auth, context.options.responseType);
+                const filePath = this.filePath(key, options.responseType);
                 yield promiseWrite(filePath, value);
                 this.files.push(filePath);
             }
@@ -61,16 +61,16 @@ class FileAdapter extends base_1.BaseAdapter {
             }
         });
     }
-    retrieve(context) {
+    retrieve(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const content = yield this.getFile(context.path, context.auth, context.options.responseType);
+            const content = yield this.getFile(key, options.responseType);
             return content;
         });
     }
-    remove(context) {
+    remove(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(context.path, context.auth, context.options.responseType);
+                const filePath = this.filePath(key, options.responseType);
                 if (yield promiseExist(filePath)) {
                     yield promiseUnlink(filePath);
                     this.files = this.files.filter(item => item != filePath);

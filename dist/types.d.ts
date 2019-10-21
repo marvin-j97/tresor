@@ -1,6 +1,7 @@
 import express from "express";
 import { Tresor } from "./index";
 import { BaseAdapter } from "./adapters/base";
+import { IDiscardStrategy } from "./discard_strategies/index";
 export interface HashMap<T> {
     [key: string]: T;
 }
@@ -29,11 +30,11 @@ declare global {
 }
 export declare type AuthFunction = (req: express.Request, res: express.Response) => string | null;
 export declare type CacheItem = {
-    path: string;
-    auth: string | null;
+    key: string;
     storedOn: number;
 };
 export interface ITresorOptions {
+    discardStrategy: IDiscardStrategy;
     maxSize: number;
     maxAge: number | string;
     adapter: BaseAdapter;

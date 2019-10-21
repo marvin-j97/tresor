@@ -8,31 +8,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const base_1 = require("./base");
-const sha1_1 = __importDefault(require("sha1"));
 class MemoryAdapter extends base_1.BaseAdapter {
     constructor() {
         super(...arguments);
         this.internalStore = {};
     }
-    store(context, value) {
+    store(key, value, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.internalStore[sha1_1.default(context.path + context.auth)] = value;
+            this.internalStore[key] = value;
         });
     }
-    retrieve(context) {
+    retrieve(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const value = this.internalStore[sha1_1.default(context.path + context.auth)];
+            const value = this.internalStore[key];
             return value ? value : null;
         });
     }
-    remove(context) {
+    remove(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            delete this.internalStore[sha1_1.default(context.path + context.auth)];
+            delete this.internalStore[key];
         });
     }
     clearSelf() {
