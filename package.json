@@ -12,7 +12,6 @@
     "server-side-cache",
     "express",
     "typescript",
-    "javascript",
     "caching"
   ],
   "author": "dotvirus",
