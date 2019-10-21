@@ -31,15 +31,15 @@ class FileAdapter extends base_1.BaseAdapter {
             recursive: true
         }).catch(err => { });
     }
-    filePath(key, ext) {
+    filePath(key) {
         const folder = path_1.default.join(process.cwd(), this.basePath);
-        const filePath = path_1.default.join(folder, key + "." + ext);
+        const filePath = path_1.default.join(folder, key + ".tresor");
         return filePath;
     }
-    getFile(key, ext) {
+    getFile(key) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(key, ext);
+                const filePath = this.filePath(key);
                 if (yield promiseExist(filePath))
                     return yield promiseRead(filePath, "utf-8");
                 return null;
@@ -52,7 +52,7 @@ class FileAdapter extends base_1.BaseAdapter {
     store(key, value, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(key, options.responseType);
+                const filePath = this.filePath(key);
                 yield promiseWrite(filePath, value);
                 this.files.push(filePath);
             }
@@ -63,14 +63,14 @@ class FileAdapter extends base_1.BaseAdapter {
     }
     retrieve(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const content = yield this.getFile(key, options.responseType);
+            const content = yield this.getFile(key);
             return content;
         });
     }
     remove(key, options) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const filePath = this.filePath(key, options.responseType);
+                const filePath = this.filePath(key);
                 if (yield promiseExist(filePath)) {
                     yield promiseUnlink(filePath);
                     this.files = this.files.filter(item => item != filePath);

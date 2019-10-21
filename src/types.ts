@@ -1,4 +1,3 @@
-import express from "express";
 import { Tresor } from "./index";
 import { BaseAdapter } from "./adapters/base";
 import { IDiscardStrategy } from "./discard_strategies/index";
@@ -22,28 +21,6 @@ export interface IAdapterContext {
   options: ITresorOptions;
 }
 
-declare global {
-  namespace Express {
-    export interface Request {
-      $tresor?: ITresorInject;
-    }
-    export interface Response {
-      $tresor: {
-        cache: (value: object | string) => Promise<string>;
-        send: (value: object | string) => Promise<string>;
-      };
-    }
-  }
-}
-
-// Returns a string (like a session token or user ID) that identifies some sort of authenticated entity
-// Cached items are signed with that string
-// Returns null for unauthenticated caches
-export type AuthFunction = (
-  req: express.Request,
-  res: express.Response
-) => string | null;
-
 // Stored cache item metadata
 // Cached content location (like JSON or HTML) is adapter-specific
 export type CacheItem = {
@@ -60,14 +37,6 @@ export interface ITresorOptions {
   maxAge: number | string;
   // Adapter to use (default = MemoryAdapter)
   adapter: BaseAdapter;
-  // Authentication cache items will be signed with (default = () => null), null = no authentication
-  auth: AuthFunction;
-  // If true, cached content is not automatically sent to client, but rather exposed in request (default = false)
-  manualResponse: boolean;
-  // Response type (default = "json")
-  responseType: "json" | "html";
-  // Whether content should be cached at all (default = () => true)
-  shouldCache: (req: express.Request, res: express.Response) => boolean;
   // Cache store hook (default = undefined)
   onStore?: (path: string, amount: number) => void;
   // Cache Hit hook (default = undefined)

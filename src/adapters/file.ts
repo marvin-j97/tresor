@@ -26,18 +26,15 @@ export class FileAdapter extends BaseAdapter {
     }).catch(err => {});
   }
 
-  private filePath(key: string, ext: "json" | "html") {
+  private filePath(key: string) {
     const folder = nodePath.join(process.cwd(), this.basePath);
-    const filePath = nodePath.join(folder, key + "." + ext);
+    const filePath = nodePath.join(folder, key + ".tresor");
     return filePath;
   }
 
-  private async getFile(
-    key: string,
-    ext: "json" | "html"
-  ): Promise<string | null> {
+  private async getFile(key: string): Promise<string | null> {
     try {
-      const filePath = this.filePath(key, ext);
+      const filePath = this.filePath(key);
 
       if (await promiseExist(filePath))
         return await promiseRead(filePath, "utf-8");
@@ -49,7 +46,7 @@ export class FileAdapter extends BaseAdapter {
 
   async store(key: string, value: string, options: ITresorOptions) {
     try {
-      const filePath = this.filePath(key, options.responseType);
+      const filePath = this.filePath(key);
       await promiseWrite(filePath, value);
       this.files.push(filePath);
     } catch (err) {
@@ -58,13 +55,13 @@ export class FileAdapter extends BaseAdapter {
   }
 
   async retrieve(key: string, options: ITresorOptions) {
-    const content = await this.getFile(key, options.responseType);
+    const content = await this.getFile(key);
     return content;
   }
 
   async remove(key: string, options: ITresorOptions) {
     try {
-      const filePath = this.filePath(key, options.responseType);
+      const filePath = this.filePath(key);
       if (await promiseExist(filePath)) {
         await promiseUnlink(filePath);
 

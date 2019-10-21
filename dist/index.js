@@ -25,10 +25,6 @@ class Tresor {
         const _default = {
             maxSize: 100,
             maxAge: time_extractor_1.parseDuration("5 min"),
-            auth: () => null,
-            manualResponse: false,
-            responseType: "json",
-            shouldCache: () => true,
             adapter: new memory_1.MemoryAdapter(),
             discardStrategy: new fifo_1.FIFOStrategy()
         };
@@ -45,66 +41,6 @@ class Tresor {
     }
     adapter() {
         return this.options.adapter;
-    }
-    static html(options) {
-        let _options = Object.assign(Object.assign({}, options), { responseType: "html" });
-        return new Tresor(_options);
-    }
-    static json(options) {
-        let _options = Object.assign(Object.assign({}, options), { responseType: "json" });
-        return new Tresor(_options);
-    }
-    sendCached(res, value) {
-        if (this.options.responseType === "json")
-            res.json(JSON.parse(value));
-        else if (this.options.responseType === "html")
-            res.send(value);
-    }
-    init() {
-        return this.middleware();
-    }
-    middleware() {
-        return (req, res, next) => __awaiter(this, void 0, void 0, function* () {
-            const beforeCache = +new Date();
-            const auth = this.options.auth(req, res);
-            const cached = yield this.adapter().checkCache({
-                path: req.originalUrl,
-                auth,
-                options: this.options
-            });
-            if (cached != null) {
-                if (this.options.onCacheHit)
-                    this.options.onCacheHit(req.originalUrl, new Date().valueOf() - beforeCache);
-                if (this.options.manualResponse === false) {
-                    return this.sendCached(res, cached);
-                }
-                req.$tresor = {
-                    isCached: true,
-                    value: cached,
-                    instance: this
-                };
-            }
-            else {
-                if (this.options.onCacheMiss)
-                    this.options.onCacheMiss(req.originalUrl, new Date().valueOf() - beforeCache);
-            }
-            res.$tresor = {
-                send: (value) => __awaiter(this, void 0, void 0, function* () {
-                    const _value = yield res.$tresor.cache(value);
-                    this.sendCached(res, _value);
-                    return _value;
-                }),
-                cache: (value) => __awaiter(this, void 0, void 0, function* () {
-                    let _value = value;
-                    if (typeof value == "object")
-                        _value = JSON.stringify(value);
-                    if (this.options.shouldCache(req, res))
-                        yield this.adapter().addToCache({ path: req.originalUrl, auth, options: this.options }, _value);
-                    return _value;
-                })
-            };
-            next();
-        });
     }
     clear() {
         return __awaiter(this, void 0, void 0, function* () {
