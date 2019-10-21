@@ -5,7 +5,6 @@ export declare abstract class BaseAdapter {
     private numItems;
     private timers;
     private removeTimer;
-    private getTimer;
     private getTimers;
     size(): number;
     private getItem;

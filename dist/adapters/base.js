@@ -22,16 +22,13 @@ class BaseAdapter {
         this.timers = {};
     }
     removeTimer(key) {
-        const timer = this.getTimer(key);
+        const timer = this.timers[key];
         if (timer)
             clearTimeout(timer);
         delete this.timers[key];
     }
-    getTimer(key) {
-        return this.timers[key];
-    }
     getTimers() {
-        return Object.keys(this.timers).map(this.getTimer);
+        return Object.keys(this.timers).map(hash => this.timers[hash]);
     }
     size() {
         return this.numItems;
@@ -114,10 +111,7 @@ class BaseAdapter {
     }
     clear() {
         return __awaiter(this, void 0, void 0, function* () {
-            console.log("Clearing...");
             yield this.clearSelf();
-            console.log("Cleared self.");
-            console.log(this.getTimers());
             this.getTimers().forEach(timer => clearTimeout(timer));
             this.timers = {};
             this.items = {};
