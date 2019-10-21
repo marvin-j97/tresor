@@ -30,7 +30,6 @@ declare global {
 }
 export declare type AuthFunction = (req: express.Request, res: express.Response) => string | null;
 export declare type CacheItem = {
-    key: string;
     storedOn: number;
 };
 export interface ITresorOptions {

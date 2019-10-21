@@ -47,7 +47,6 @@ export type AuthFunction = (
 // Stored cache item metadata
 // Cached content location (like JSON or HTML) is adapter-specific
 export type CacheItem = {
-  key: string;
   storedOn: number;
 };
 

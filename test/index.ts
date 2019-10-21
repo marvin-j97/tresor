@@ -35,8 +35,9 @@ describe("Parse duration", () => {
     ["3 seconds", 3000],
     ["4 minutes", 1000 * 60 * 4],
     ["2 hours", 1000 * 60 * 60 * 2],
+    ["2h", 1000 * 60 * 60 * 2],
     ["3 days", 1000 * 60 * 60 * 24 * 3]
-  ] as [string, number][];
+  ] as [string | number, number][];
 
   for (const test of tests) {
     it(`Should equal ${test[1]}`, () => {
@@ -221,6 +222,18 @@ describe("Clear Tresor", () => {
     }
     expect(twentyfourhours.adapter().size()).to.be.equal(100);
     await twentyfourhours.clear();
+    expect(twentyfourhours.adapter().size()).to.equal(0);
+  });
+});
+
+describe("Invalidate route", () => {
+  it("Items should be empty after invalidating", async function() {
+    this.timeout(5000);
+
+    await chai.request(app).get(`/24hours?q=0`);
+
+    expect(twentyfourhours.adapter().size()).to.be.equal(1);
+    await twentyfourhours.invalidate("/24hours?q=0", null);
     expect(twentyfourhours.adapter().size()).to.equal(0);
   });
 });

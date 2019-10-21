@@ -40,7 +40,6 @@ class BaseAdapter {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.store(key, value, options);
             this.items[key] = {
-                key: key,
                 storedOn: +new Date()
             };
             this.timers[key] = setTimeout(() => {

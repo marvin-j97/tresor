@@ -31,7 +31,6 @@ export abstract class BaseAdapter {
   private async storeItem(key: string, value: string, options: ITresorOptions) {
     await this.store(key, value, options);
     this.items[key] = {
-      key: key,
       storedOn: +new Date()
     };
     this.timers[key] = setTimeout(
