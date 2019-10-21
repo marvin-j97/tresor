@@ -1,13 +1,7 @@
-import { Tresor } from "./index";
 import { BaseAdapter } from "./adapters/base";
 import { IDiscardStrategy } from "./discard_strategies/index";
 export interface HashMap<T> {
     [key: string]: T;
-}
-export interface ITresorInject {
-    isCached: boolean;
-    value: string;
-    instance: Tresor;
 }
 export interface IAdapterContext {
     path: string;
