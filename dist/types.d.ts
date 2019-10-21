@@ -1,6 +1,9 @@
 import express from "express";
 import { Tresor } from "./index";
 import { BaseAdapter } from "./adapters/base";
+export interface HashMap<T> {
+    [key: string]: T;
+}
 export interface ITresorInject {
     isCached: boolean;
     value: string;
@@ -31,7 +34,6 @@ export declare type CacheItem = {
     storedOn: number;
 };
 export interface ITresorOptions {
-    minSize: number;
     maxSize: number;
     maxAge: number | string;
     adapter: BaseAdapter;

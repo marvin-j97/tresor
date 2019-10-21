@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const base_1 = require("./base");
-const md5_1 = __importDefault(require("md5"));
+const sha1_1 = __importDefault(require("sha1"));
 class MemoryAdapter extends base_1.BaseAdapter {
     constructor() {
         super(...arguments);
@@ -21,18 +21,18 @@ class MemoryAdapter extends base_1.BaseAdapter {
     }
     store(context, value) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.internalStore[md5_1.default(context.path + context.auth)] = value;
+            this.internalStore[sha1_1.default(context.path + context.auth)] = value;
         });
     }
     retrieve(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            const value = this.internalStore[md5_1.default(context.path + context.auth)];
+            const value = this.internalStore[sha1_1.default(context.path + context.auth)];
             return value ? value : null;
         });
     }
     remove(context) {
         return __awaiter(this, void 0, void 0, function* () {
-            delete this.internalStore[md5_1.default(context.path + context.auth)];
+            delete this.internalStore[sha1_1.default(context.path + context.auth)];
         });
     }
     clearSelf() {

@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const base_1 = require("./base");
-const md5_1 = __importDefault(require("md5"));
+const sha1_1 = __importDefault(require("sha1"));
 const path_1 = __importDefault(require("path"));
 const util_1 = require("util");
 const fs_1 = require("fs");
@@ -31,7 +31,7 @@ class FileAdapter extends base_1.BaseAdapter {
         promiseMkdir(path_1.default.relative(process.cwd(), folder), { recursive: true });
     }
     filePath(path, auth, ext) {
-        const hash = md5_1.default(path + auth);
+        const hash = sha1_1.default(path + auth);
         const folder = path_1.default.join(process.cwd(), this.basePath);
         const filePath = path_1.default.join(folder, hash + "." + ext);
         return filePath;

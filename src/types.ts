@@ -2,6 +2,10 @@ import express from "express";
 import { Tresor } from "./index";
 import { BaseAdapter } from "./adapters/base";
 
+export interface HashMap<T> {
+  [key: string]: T;
+}
+
 // Injected cached content in request
 // (only relevant when using manualResponse)
 export interface ITresorInject {
@@ -45,18 +49,11 @@ export type CacheItem = { path: string; auth: string | null; storedOn: number };
 
 // Constructor options
 export interface ITresorOptions {
-  // Discard strategy to use when adding an item to an already full cache
-  // discardStrategy: "fifo"
-  // Use timers to sweep expired cache items (default = true)
-  // Minimizes the amount of stale items in the cache
-  // useTimers: boolean
-  // Ignore expired items, as long as minAmount is not reached (default = 0)
-  // Increases cache hit chance, but will also increase memory usage and may lead to stale items if traffic is low
-  // Not relevant when using timers
-  minSize: number;
+  // Discard strategy to use when adding an item to an already full cache (default = new FIFOStrategy())
+  // discardStrategy: DiscardStrategy;
   // Only allow limited amount of items (default = 100)
   maxSize: number;
-  // Max age in ms (default = 60000 aka. 1 minute)
+  // Max age in ms (default = 300000 aka. 5 minutes)
   maxAge: number | string;
   // Adapter to use (default = MemoryAdapter)
   adapter: BaseAdapter;

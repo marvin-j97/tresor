@@ -31,7 +31,6 @@ export class Tresor {
 
   constructor(options?: Partial<ITresorOptions>) {
     const _default: ITresorOptions = {
-      minSize: 0,
       maxSize: 100,
       maxAge: parseDuration("5 min"),
       auth: () => null,
@@ -45,10 +44,6 @@ export class Tresor {
     this.options = _default;
 
     this.options.maxAge = parseDuration(this.options.maxAge);
-
-    if (this.options.minSize >= this.options.maxSize) {
-      throw "TRESOR: minAmount cannot be greater or equal than maxAmount";
-    }
 
     if (this.options.maxSize < 1) {
       throw "TRESOR: maxAmount needs to be 1 or higher";

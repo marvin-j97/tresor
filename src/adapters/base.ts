@@ -1,15 +1,32 @@
-import { CacheItem, IAdapterContext, ITresorOptions } from "../types";
+import { CacheItem, IAdapterContext, ITresorOptions, HashMap } from "../types";
+import sha1 from "sha1";
+import { parseDuration } from "../time_extractor";
 
 // Base class to create new Adapters
 // Public methods should not be called by the deriving Adapters
 export abstract class BaseAdapter {
   protected items = [] as CacheItem[];
+  private timers = {} as HashMap<NodeJS.Timeout>;
+
+  private removeTimer(key: string) {
+    const timer = this.getTimer(key);
+    if (timer) clearTimeout(timer);
+    delete this.timers[key];
+  }
+
+  private getTimer(key: string) {
+    return this.timers[key];
+  }
+
+  private getTimers() {
+    return Object.keys(this.timers).map(this.getTimer);
+  }
 
   public size() {
     return this.items.length;
   }
 
-  private getItem({ path, auth, options }: IAdapterContext) {
+  private getItem({ path, auth }: IAdapterContext) {
     return this.items.find(item => item.path == path && item.auth == auth);
   }
 
@@ -20,6 +37,15 @@ export abstract class BaseAdapter {
       auth: context.auth,
       storedOn: +new Date()
     });
+    const hash = sha1(context.path + context.auth);
+    this.timers[hash] = setTimeout(
+      () => {
+        this.removeItem(context);
+      },
+      typeof context.options.maxAge == "string"
+        ? parseDuration(context.options.maxAge)
+        : context.options.maxAge
+    );
 
     if (context.options.onStore)
       context.options.onStore(context.path, this.items.length);
@@ -30,6 +56,8 @@ export abstract class BaseAdapter {
     this.items = this.items.filter(
       item => !(item.path == context.path && item.auth == context.auth)
     );
+    const hash = sha1(context.path + context.auth);
+    this.removeTimer(hash);
   }
 
   public async checkCache({
@@ -41,10 +69,7 @@ export abstract class BaseAdapter {
 
     if (item) {
       // minAmount will ignore cache age as long as there are less items in cache than minAmount
-      if (
-        item.storedOn < new Date().valueOf() - <number>options.maxAge &&
-        this.size() > options.minSize
-      ) {
+      if (item.storedOn < new Date().valueOf() - <number>options.maxAge) {
         // Cache miss: Cached item too old && minAmount reached
         this.removeItem({ path, auth, options });
         return null;
@@ -85,6 +110,8 @@ export abstract class BaseAdapter {
 
   public async clear() {
     await this.clearSelf();
+    this.getTimers().forEach(timer => clearTimeout(timer));
+    this.timers = {};
     this.items = [];
   }
 

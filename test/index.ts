@@ -204,5 +204,10 @@ describe("Limit test", () => {
 
       expect(limiter100.adapter().size()).to.be.lessThan(101);
     }
+
+    // Wait for every item to expire
+    await new Promise(r => setTimeout(() => r(), 2000));
+
+    expect(limiter100.adapter().size()).to.equal(0);
   });
 });

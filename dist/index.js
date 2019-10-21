@@ -13,7 +13,6 @@ const time_extractor_1 = require("./time_extractor");
 class Tresor {
     constructor(options) {
         const _default = {
-            minSize: 0,
             maxSize: 100,
             maxAge: time_extractor_1.parseDuration("5 min"),
             auth: () => null,
@@ -26,9 +25,6 @@ class Tresor {
             Object.assign(_default, options);
         this.options = _default;
         this.options.maxAge = time_extractor_1.parseDuration(this.options.maxAge);
-        if (this.options.minSize >= this.options.maxSize) {
-            throw "TRESOR: minAmount cannot be greater or equal than maxAmount";
-        }
         if (this.options.maxSize < 1) {
             throw "TRESOR: maxAmount needs to be 1 or higher";
         }

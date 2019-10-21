@@ -1,6 +1,10 @@
 import { CacheItem, IAdapterContext } from "../types";
 export declare abstract class BaseAdapter {
     protected items: CacheItem[];
+    private timers;
+    private removeTimer;
+    private getTimer;
+    private getTimers;
     size(): number;
     private getItem;
     private storeItem;

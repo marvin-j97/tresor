@@ -1,6 +1,6 @@
 import { BaseAdapter } from "./base";
 import { IAdapterContext } from "../types";
-import md5 from "md5";
+import sha1 from "sha1";
 import nodePath from "path";
 import { promisify } from "util";
 import { exists, readFile, writeFile, unlink, mkdir } from "fs";
@@ -26,7 +26,7 @@ export class FileAdapter extends BaseAdapter {
   }
 
   private filePath(path: string, auth: string | null, ext: "json" | "html") {
-    const hash = md5(path + auth);
+    const hash = sha1(path + auth);
     const folder = nodePath.join(process.cwd(), this.basePath);
     const filePath = nodePath.join(folder, hash + "." + ext);
     return filePath;
