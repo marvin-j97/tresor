@@ -2,3 +2,6 @@
 
 # tresor
 Server-side cache written in Typescript
+
+# Usage with Express
+Use [Tresor for Express](https://github.com/dotvirus/tresor.express)
