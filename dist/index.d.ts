@@ -6,9 +6,13 @@ import { IDiscardStrategy } from "./discard_strategies/index";
 import { FIFOStrategy } from "./discard_strategies/fifo";
 import { LIFOStrategy } from "./discard_strategies/lifo";
 export declare class Tresor {
-    options: ITresorOptions;
-    adapter(): BaseAdapter;
+    protected options: ITresorOptions;
     constructor(options?: Partial<ITresorOptions>);
+    checkCache(path: string, auth: string | null): Promise<string | null>;
+    addToCache(path: string, auth: string | null, value: string): Promise<void>;
+    getOpts(): ITresorOptions;
+    getOptions(): ITresorOptions;
+    adapter(): BaseAdapter;
     clear(): Promise<void>;
     invalidate(path: string, auth: string | null): Promise<void>;
 }

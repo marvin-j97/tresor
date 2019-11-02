@@ -1,6 +1,6 @@
 {
   "name": "@dotvirus/tresor",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Server-side cache written in Typescript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
