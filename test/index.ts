@@ -9,6 +9,8 @@ describe("Parse duration", () => {
     ["1 sec", 1000],
     ["1 s", 1000],
     ["1s", 1000],
+    ["0.5 second", 500],
+    ["1 second", 1000],
     ["5 secs", 5000],
     ["1mins", 60000],
     ["1 min", 60000],
@@ -43,11 +45,46 @@ describe("Options", () => {
 
     const cache = new Tresor({
       maxAge,
-      maxSize,
-      adapter: null as any
+      maxSize
     });
 
-    expect(cache.options.maxAge).to.equal(maxAge);
-    expect(cache.options.maxSize).to.equal(maxSize);
+    expect(cache.getOptions().maxAge).to.equal(maxAge);
+    expect(cache.getOptions().maxSize).to.equal(maxSize);
+  });
+});
+
+const sleep = (time: number) => new Promise(r => setTimeout(() => r(), time));
+
+describe("Cache", () => {
+  it("Cached items should vanish after 1 sec", async () => {
+    const cache = new Tresor({
+      maxAge: "0.5 second"
+    });
+
+    for (let i = 0; i < 100; i++)
+      await cache.addToCache(i.toString(), null, i.toString());
+
+    await sleep(750);
+
+    for (let i = 0; i < 100; i++) {
+      const val = await cache.checkCache(i.toString(), null);
+      expect(val).to.equal(null);
+    }
+  });
+
+  it("Cached items should not vanish", async () => {
+    const cache = new Tresor({
+      maxAge: "5 seconds"
+    });
+
+    for (let i = 0; i < 100; i++)
+      await cache.addToCache(i.toString(), null, i.toString());
+
+    await sleep(1000);
+
+    for (let i = 0; i < 100; i++) {
+      const val = await cache.checkCache(i.toString(), null);
+      expect(val).to.equal(i.toString());
+    }
   });
 });
